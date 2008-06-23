@@ -1,0 +1,12 @@
+ShutdownGuard
+http://shutdownguard.googlecode.com/
+recover89@gmail.com
+
+Prevent Windows shutdown.
+
+You can use -hide as a parameter to hide the tray icon.
+
+Changelog
+---------
+0.1:
+Initial release.
