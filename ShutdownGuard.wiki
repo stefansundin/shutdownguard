@@ -1,0 +1,13 @@
+#summary Some info
+#labels Featured
+
+The idea for ShutdownGuard came from a program I made a long time ago in Delphi, named ShutdownGuard. This C-port is a much improved version of that. You can download the old Delphi program and its source from the [http://code.google.com/p/shutdownguard/downloads/list Downloads section].
+
+= Balloon tips =
+
+I had some troubles getting the balloon tips to work properly. I got some help from [http://vbnet.mvps.org/index.html?code/subclass/shellnotifyballoontipclick.htm this page].
+
+
+= Privileges =
+
+Applications must get the [http://msdn.microsoft.com/en-us/library/aa392758(VS.85).aspx SeShutdownPrivilege] to shutdown Windows.
