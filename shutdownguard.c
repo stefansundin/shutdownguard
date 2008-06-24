@@ -373,8 +373,8 @@ BOOL SetPrivilege(HANDLE hToken, LPCTSTR priv, BOOL bEnablePrivilege) {
 LRESULT CALLBACK CBTProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 	if (nCode == HCBT_ACTIVATE) {
 		//Edit the caption of the buttons
-		SetDlgItemText((HWND)wParam,IDYES,"Shutdown");
-		SetDlgItemText((HWND)wParam,IDNO,"Log off");
+		SetDlgItemText((HWND)wParam,IDYES,"Log off");
+		SetDlgItemText((HWND)wParam,IDNO,"Shutdown");
 		SetDlgItemText((HWND)wParam,IDCANCEL,"Nothing");
 	}
 	return 0;
@@ -425,12 +425,12 @@ LRESULT CALLBACK MyWndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		else if (lParam == NIN_BALLOONUSERCLICK) {
 			hide=0;
 			HHOOK hhk=SetWindowsHookEx(WH_CBT, &CBTProc, 0, GetCurrentThreadId());
-			int response=MessageBox(NULL, "What do you want to do?", "ShutdownGuard", MB_ICONQUESTION|MB_YESNOCANCEL);
+			int response=MessageBox(NULL, "What do you want to do?", "ShutdownGuard", MB_ICONQUESTION|MB_YESNOCANCEL|MB_DEFBUTTON2);
 			UnhookWindowsHookEx(hhk);
 			if (response == IDYES || response == IDNO) {
 				enabled=0;
 				UpdateTray();
-				ExitWindowsEx((response==IDYES?EWX_SHUTDOWN:EWX_LOGOFF),0);
+				ExitWindowsEx((response==IDYES?EWX_LOGOFF:EWX_SHUTDOWN),0);
 			}
 		}
 	}
