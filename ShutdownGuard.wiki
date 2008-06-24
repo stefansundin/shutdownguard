@@ -5,7 +5,9 @@ The idea for ShutdownGuard came from a program I made a long time ago in Delphi,
 
 = Balloon tips =
 
-I had some troubles getting the balloon tips to work properly. I got some help from [http://vbnet.mvps.org/index.html?code/subclass/shellnotifyballoontipclick.htm this page].
+Initially I had some troubles getting the balloon tips to work properly. I got some help from [http://vbnet.mvps.org/index.html?code/subclass/shellnotifyballoontipclick.htm this page]. I'm very pleased with the result.
+
+http://shutdownguard.googlecode.com/svn/wiki/ShutdownGuard.png
 
 
 = Privileges =
