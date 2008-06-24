@@ -1,7 +1,7 @@
 #summary Some info
 #labels Featured
 
-The idea for ShutdownGuard came from a program I made a long time ago in Delphi, named ShutdownGuard. This C-port is a much improved version of that. You can download the old Delphi program and its source from the [http://code.google.com/p/shutdownguard/downloads/list Downloads section].
+The idea for !ShutdownGuard came from a program I made a long time ago in Delphi, named !ShutdownGuard. This C-port is a much improved version of that. You can download the old Delphi program and its source from the [http://code.google.com/p/shutdownguard/downloads/list Downloads section].
 
 = Balloon tips =
 
