@@ -17,4 +17,4 @@ http://shutdownguard.googlecode.com/svn/wiki/vista.png
 
 = Privileges =
 
-Applications must get the [http://msdn.microsoft.com/en-us/library/aa392758(VS.85).aspx SeShutdownPrivilege] to shutdown Windows.
+Applications must get the [http://msdn.microsoft.com/en-us/library/aa392758(VS.85).aspx SeShutdownPrivilege] to shutdown Windows. [http://msdn.microsoft.com/en-us/library/aa376861(VS.85).aspx This msdn page] contains some good example code on how to obtain it.
