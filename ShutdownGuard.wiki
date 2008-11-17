@@ -14,7 +14,7 @@ With Vista, Microsoft broke all programs who previously prevented shutdowns, now
 
 http://shutdownguard.googlecode.com/svn/wiki/vista.png
 
-This dialog is created by Vista, not ShutdownGuard.
+This dialog is created by Vista, not !ShutdownGuard.
 
 = Privileges =
 
