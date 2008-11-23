@@ -17,7 +17,7 @@ if "%1" == "all" (
 		if not exist "build/%%f/ShutdownGuard" (
 			mkdir "build\%%f\ShutdownGuard"
 		)
-		copy "localization/%%f/info.txt" "build/%%f/ShutdownGuard/info.txt"
+		copy "localization\%%f\info.txt" "build/%%f/ShutdownGuard/info.txt"
 		
 		gcc -o "build/%%f/ShutdownGuard/ShutdownGuard.exe" shutdownguard.c build/resources.o -mwindows -DL10N_FILE=\"localization/%%f/strings.h\"
 		if exist "build/%%f/ShutdownGuard/ShutdownGuard.exe" (
