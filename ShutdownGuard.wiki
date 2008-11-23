@@ -10,6 +10,7 @@ Initially I had some troubles getting the balloon tips to work properly. I got s
 http://shutdownguard.googlecode.com/svn/wiki/ShutdownGuard.png
 
 = Vista =
+
 With Vista, Microsoft broke all programs who previously prevented shutdowns, now programs have to specify a reason as to why they want to prevent a shutdown. Release 0.2 fixed that and now you should see this dialog when !ShutdownGuard prevents a shutdown.
 
 http://shutdownguard.googlecode.com/svn/wiki/vista.png
@@ -19,3 +20,7 @@ This dialog is created by Vista, not !ShutdownGuard.
 = Privileges =
 
 Applications must get the [http://msdn.microsoft.com/en-us/library/aa392758(VS.85).aspx SeShutdownPrivilege] to shutdown Windows. [http://msdn.microsoft.com/en-us/library/aa376861(VS.85).aspx This msdn page] contains some good example code on how to obtain it.
+
+= Limited User =
+
+I've tried running !ShutdownGuard as a limited user and in my tests it was able to prevent shutdowns, reboots, and log offs as usual. It couldn't initiate a shutdown but was able to log out.
