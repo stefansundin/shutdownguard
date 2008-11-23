@@ -16,11 +16,26 @@
 	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#define UNICODE
+#define _UNICODE
+
 #include <stdio.h>
 #include <stdlib.h>
 
 #define _WIN32_IE 0x0600
 #include <windows.h>
+
+#define L10N_NAME    L"ShutdownGuard"
+#define L10N_VERSION L"0.2"
+//Localization
+#ifndef L10N_FILE
+#define L10N_FILE "localization/en-US/strings.h"
+#endif
+//Include strings and output error if they are out of date
+#include L10N_FILE
+#if L10N_FILE_VERSION != 1
+#error Localization not up to date!
+#endif
 
 //Messages
 #define WM_ICONTRAY            WM_USER+1
@@ -60,12 +75,48 @@ static int enabled=1;
 static int vista=0;
 static HINSTANCE hinstDLL=NULL;
 
-static char txt[100];
+static wchar_t txt[100];
 
+//Error message handling
+static int showerror=1;
+
+LRESULT CALLBACK ErrorMsgProc(INT nCode, WPARAM wParam, LPARAM lParam) {
+	if (nCode == HCBT_ACTIVATE) {
+		//Edit the caption of the buttons
+		SetDlgItemText((HWND)wParam,IDYES,L"Copy message");
+		SetDlgItemText((HWND)wParam,IDNO,L"OK");
+	}
+	return 0;
+}
+
+void Error(wchar_t *func, wchar_t *info, int errorcode, int line) {
+	if (showerror) {
+		//Format message
+		wchar_t errormsg[100];
+		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,NULL,errorcode,0,errormsg,sizeof(errormsg)/sizeof(wchar_t),NULL);
+		errormsg[wcslen(errormsg)-2]='\0'; //Remove that damn newline at the end of the formatted error message
+		swprintf(txt,L"%s failed in file %s, line %d.\nError: %s (%d)\n\n%s", func, TEXT(__FILE__), line, errormsg, errorcode, info);
+		//Display message
+		HHOOK hhk=SetWindowsHookEx(WH_CBT, &ErrorMsgProc, 0, GetCurrentThreadId());
+		int response=MessageBox(NULL, txt, L10N_NAME" Error", MB_ICONERROR|MB_YESNO|MB_DEFBUTTON2);
+		UnhookWindowsHookEx(hhk);
+		if (response == IDYES) {
+			//Copy message to clipboard
+			OpenClipboard(NULL);
+			EmptyClipboard();
+			wchar_t *data=LocalAlloc(LMEM_FIXED,(wcslen(txt)+1)*sizeof(wchar_t));
+			memcpy(data,txt,(wcslen(txt)+1)*sizeof(wchar_t));
+			SetClipboardData(CF_UNICODETEXT,data);
+			CloseClipboard();
+		}
+	}
+}
+
+//Entry point
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow) {
 	//Look for previous instance
 	HWND previnst;
-	if ((previnst=FindWindow("ShutdownGuard",NULL)) != NULL) {
+	if ((previnst=FindWindow(L10N_NAME,NULL)) != NULL) {
 		SendMessage(previnst,WM_ADDTRAY,0,0);
 		return 0;
 	}
@@ -76,43 +127,38 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	}
 	
 	//Create window class
-	WNDCLASS wnd;
-	wnd.style=CS_HREDRAW | CS_VREDRAW;
+	WNDCLASSEX wnd;
+	wnd.cbSize=sizeof(WNDCLASSEX);
+	wnd.style=0;
 	wnd.lpfnWndProc=MyWndProc;
 	wnd.cbClsExtra=0;
 	wnd.cbWndExtra=0;
 	wnd.hInstance=hInst;
-	wnd.hIcon=LoadImage(NULL, IDI_APPLICATION, IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR);
-	wnd.hCursor=LoadImage(NULL, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTCOLOR);
-	wnd.hbrBackground=(HBRUSH)(COLOR_BACKGROUND+1);
+	wnd.hIcon=NULL;
+	wnd.hIconSm=NULL;
+	wnd.hCursor=LoadImage(NULL, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTCOLOR|LR_SHARED);
+	wnd.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
 	wnd.lpszMenuName=NULL;
-	wnd.lpszClassName="ShutdownGuard";
+	wnd.lpszClassName=L10N_NAME;
 	
 	//Register class
-	if (RegisterClass(&wnd) == 0) {
-		sprintf(txt,"RegisterClass() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Error", MB_ICONERROR|MB_OK);
-		return 1;
-	}
+	RegisterClassEx(&wnd);
 	
 	//Create window
-	HWND hwnd=CreateWindow(wnd.lpszClassName, "ShutdownGuard", WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInst, NULL);
+	HWND hwnd=CreateWindowEx(0,wnd.lpszClassName, L10N_NAME, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInst, NULL);
 	
 	//Register TaskbarCreated so we can re-add the tray icon if explorer.exe crashes
-	if ((WM_TASKBARCREATED=RegisterWindowMessage("TaskbarCreated")) == 0) {
-		sprintf(txt,"RegisterWindowMessage() failed (error code: %d) in file %s, line %d.\nThis means the tray icon won't be added if (or should I say when) explorer.exe crashes.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+	if ((WM_TASKBARCREATED=RegisterWindowMessage(L"TaskbarCreated")) == 0) {
+		Error(L"RegisterWindowMessage('TaskbarCreated')",L"This means the tray icon won't be added if (or should I say when) explorer.exe crashes.",GetLastError(),__LINE__);
 	}
 	
 	//Load tray icons
-	if ((icon[0] = LoadImage(hInst, "tray-disabled", IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR)) == NULL) {
-		sprintf(txt,"LoadImage() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Error", MB_ICONERROR|MB_OK);
+	if ((icon[0] = LoadImage(hInst, L"tray-disabled", IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR)) == NULL) {
+		Error(L"LoadImage('tray-disabled')",L"",GetLastError(),__LINE__);
 		PostQuitMessage(1);
 	}
-	if ((icon[1] = LoadImage(hInst, "tray-enabled", IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR)) == NULL) {
-		sprintf(txt,"LoadImage() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Error", MB_ICONERROR|MB_OK);
+	if ((icon[1] = LoadImage(hInst, L"tray-enabled", IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR)) == NULL) {
+		Error(L"LoadImage('tray-enabled')",L"",GetLastError(),__LINE__);
 		PostQuitMessage(1);
 	}
 	
@@ -124,8 +170,8 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	traydata.uCallbackMessage=WM_ICONTRAY;
 	//Balloon tooltip
 	traydata.uTimeout=10000;
-	strncpy(traydata.szInfoTitle,"ShutdownGuard",sizeof(traydata.szInfoTitle));
-	strncpy(traydata.szInfo,"Prevented Windows shutdown.\nPress me to continue shutdown.",sizeof(traydata.szInfo));
+	wcsncpy(traydata.szInfoTitle,L10N_NAME,sizeof(traydata.szInfoTitle));
+	wcsncpy(traydata.szInfo,L10N_BALLOON,sizeof(traydata.szInfo));
 	traydata.dwInfoFlags=NIIF_USER;
 	
 	//Update tray icon
@@ -139,35 +185,31 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	vi.dwOSVersionInfoSize=sizeof(OSVERSIONINFO);
 	GetVersionEx(&vi);
 	if (vi.dwMajorVersion >= 6) {
-		vista=1;
 		//Load dll
-		if ((hinstDLL=LoadLibrary((LPCTSTR)"user32.dll")) == NULL) {
-			sprintf(txt,"Failed to load user32.dll. This really shouldn't have happened.\nGo check the ShutdownGuard website for an update, if the latest version doesn't fix this, please report it.\n\nError message:\nLoadLibrary() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-			MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+		if ((hinstDLL=LoadLibraryEx(L"user32.dll",NULL,0)) == NULL) {
+			Error(L"LoadLibrary('user32.dll')",L"This really shouldn't have happened.\nGo check the "L10N_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
 		}
 		else {
 			//Get address to ShutdownBlockReasonCreate
 			if ((ShutdownBlockReasonCreate=(pfunc)GetProcAddress(hinstDLL,"ShutdownBlockReasonCreate")) == NULL) {
-				sprintf(txt,"Failed to load Vista specific function.\nGo check the ShutdownGuard website for an update, if the latest version doesn't fix this, please report it.\n\nError message:\nGetProcAddress() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-				MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+				Error(L"GetProcAddress('ShutdownBlockReasonCreate')",L"Failed to load Vista specific function.\nGo check the "L10N_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
 			}
 			//ShutdownBlockReasonDestroy
 			if ((ShutdownBlockReasonDestroy=(pfunc)GetProcAddress(hinstDLL,"ShutdownBlockReasonDestroy")) == NULL) {
-				sprintf(txt,"Failed to load Vista specific function.\nGo check the ShutdownGuard website for an update, if the latest version doesn't fix this, please report it.\n\nError message:\nGetProcAddress() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-				MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+				Error(L"GetProcAddress('ShutdownBlockReasonDestroy')",L"Failed to load Vista specific function.\nGo check the "L10N_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
 			}
+			vista=1;
 		}
 	}
 	
 	//Make windows query this program first
 	if (SetProcessShutdownParameters(0x4FF,0) == 0) {
-		sprintf(txt,"SetProcessShutdownParameters() failed (error code: %d) in file %s, line %d.\nThis means that programs started before ShutdownGuard will be closed before the shutdown is stopped.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+		Error(L"SetProcessShutdownParameters()",L"This means that programs started before "L10N_NAME" will probably be closed before the shutdown can be stopped.",GetLastError(),__LINE__);
 	}
 	
 	//Message loop
 	MSG msg;
-	while(GetMessage(&msg, NULL, 0, 0)) {
+	while (GetMessage(&msg, NULL, 0, 0)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
@@ -177,93 +219,72 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 void ShowContextMenu(HWND hwnd) {
 	POINT pt;
 	GetCursorPos(&pt);
-	HMENU hMenu, hAutostartMenu;
-	if ((hMenu = CreatePopupMenu()) == NULL) {
-		sprintf(txt,"CreatePopupMenu() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
-	}
+	HMENU hMenu=CreatePopupMenu();
 	
 	//Toggle
-	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_TOGGLE, (enabled?"Disable":"Enable"));
+	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_TOGGLE, (enabled?L10N_MENU_DISABLE:L10N_MENU_ENABLE));
 	
 	//Hide
-	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_HIDE, "Hide tray");
+	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_HIDE, L10N_MENU_HIDE);
 	
-	//Autostart
-	//Check registry
+	//Check autostart
 	int autostart_enabled=0, autostart_hide=0;
 	//Open key
 	HKEY key;
-	if (RegOpenKeyEx(HKEY_CURRENT_USER,"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,KEY_QUERY_VALUE,&key) != ERROR_SUCCESS) {
-		sprintf(txt,"RegOpenKeyEx() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
-	}
+	RegOpenKeyEx(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,KEY_QUERY_VALUE,&key);
 	//Read value
-	char autostart_value[MAX_PATH+10];
+	wchar_t autostart_value[MAX_PATH+10];
 	DWORD len=sizeof(autostart_value);
-	DWORD res=RegQueryValueEx(key,"ShutdownGuard",NULL,NULL,(LPBYTE)autostart_value,&len);
-	if (res != ERROR_FILE_NOT_FOUND && res != ERROR_SUCCESS) {
-		sprintf(txt,"RegQueryValueEx() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
-	}
+	RegQueryValueEx(key,L10N_NAME,NULL,NULL,(LPBYTE)autostart_value,&len);
 	//Close key
-	if (RegCloseKey(key) != ERROR_SUCCESS) {
-		sprintf(txt,"RegCloseKey() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
-	}
+	RegCloseKey(key);
 	//Get path
-	char path[MAX_PATH];
-	if (GetModuleFileName(NULL,path,sizeof(path)) == 0) {
-		sprintf(txt,"GetModuleFileName() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
-	}
+	wchar_t path[MAX_PATH];
+	GetModuleFileName(NULL,path,MAX_PATH);
 	//Compare
-	char pathcmp[MAX_PATH+10];
-	sprintf(pathcmp,"\"%s\"",path);
-	if (!strcmp(pathcmp,autostart_value)) {
+	wchar_t pathcmp[MAX_PATH+10];
+	swprintf(pathcmp,L"\"%s\"",path);
+	if (!wcscmp(pathcmp,autostart_value)) {
 		autostart_enabled=1;
 	}
-	sprintf(pathcmp,"\"%s\" -hide",path);
-	if (!strcmp(pathcmp,autostart_value)) {
-		autostart_enabled=1;
-		autostart_hide=1;
+	else {
+		swprintf(pathcmp,L"\"%s\" -hide",path);
+		if (!wcscmp(pathcmp,autostart_value)) {
+			autostart_enabled=1;
+			autostart_hide=1;
+		}
 	}
-	
-	if ((hAutostartMenu = CreatePopupMenu()) == NULL) {
-		sprintf(txt,"CreatePopupMenu() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
-	}
-	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_enabled?MF_CHECKED:0), (autostart_enabled?SWM_AUTOSTART_OFF:SWM_AUTOSTART_ON), "Autostart");
-	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_hide?MF_CHECKED:0), (autostart_hide?SWM_AUTOSTART_HIDE_OFF:SWM_AUTOSTART_HIDE_ON), "Hide tray");
-	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_POPUP, (UINT)hAutostartMenu, "Autostart");
+	//Autostart
+	HMENU hAutostartMenu=CreatePopupMenu();
+	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_enabled?MF_CHECKED:0), (autostart_enabled?SWM_AUTOSTART_OFF:SWM_AUTOSTART_ON), L10N_MENU_AUTOSTART);
+	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_hide?MF_CHECKED:0), (autostart_hide?SWM_AUTOSTART_HIDE_OFF:SWM_AUTOSTART_HIDE_ON), L10N_MENU_HIDE);
+	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_POPUP, (UINT)hAutostartMenu, L10N_MENU_AUTOSTART);
 	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_SEPARATOR, 0, NULL);
 	
 	//Shutdown
-	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_SHUTDOWN, "Shutdown");
+	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_SHUTDOWN, L10N_MENU_SHUTDOWN);
 	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_SEPARATOR, 0, NULL);
 	
 	//About
-	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_ABOUT, "About");
+	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_ABOUT, L10N_MENU_ABOUT);
 	
 	//Exit
-	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_EXIT, "Exit");
+	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_EXIT, L10N_MENU_EXIT);
 
-	//Must set window to the foreground, or else the menu won't disappear when clicking outside it
+	//Track menu
 	SetForegroundWindow(hwnd);
-
-	TrackPopupMenu(hMenu, TPM_BOTTOMALIGN, pt.x, pt.y, 0, hwnd, NULL );
+	TrackPopupMenu(hMenu, TPM_BOTTOMALIGN, pt.x, pt.y, 0, hwnd, NULL);
 	DestroyMenu(hMenu);
 }
 
 int UpdateTray() {
-	strncpy(traydata.szTip,(enabled?"ShutdownGuard (enabled)":"ShutdownGuard (disabled)"),sizeof(traydata.szTip));
+	wcsncpy(traydata.szTip,(enabled?L10N_TRAY_ENABLED:L10N_TRAY_DISABLED),sizeof(traydata.szTip));
 	traydata.hIcon=icon[enabled];
 	
 	//Only add or modify if not hidden or if balloon will be displayed
 	if (!hide || traydata.uFlags&NIF_INFO) {
 		if (Shell_NotifyIcon((tray_added?NIM_MODIFY:NIM_ADD),&traydata) == FALSE) {
-			sprintf(txt,"Failed to add tray icon.\n\nError message:\nShell_NotifyIcon() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-			MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+			Error(L"Shell_NotifyIcon(NIM_ADD/NIM_MODIFY)",L"Failed to add tray icon.",GetLastError(),__LINE__);
 			return 1;
 		}
 		
@@ -280,8 +301,7 @@ int RemoveTray() {
 	}
 	
 	if (Shell_NotifyIcon(NIM_DELETE,&traydata) == FALSE) {
-		sprintf(txt,"Failed to remove tray icon.\n\nShell_NotifyIcon() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+		Error(L"Shell_NotifyIcon(NIM_DELETE)",L"Failed to remove tray icon.",GetLastError(),__LINE__);
 		return 1;
 	}
 	
@@ -290,68 +310,64 @@ int RemoveTray() {
 	return 0;
 }
 
-void ToggleState() {
-	enabled=!enabled;
-	UpdateTray();
-}
-
 void SetAutostart(int on, int hide) {
 	//Open key
 	HKEY key;
-	if (RegOpenKeyEx(HKEY_CURRENT_USER,"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,KEY_SET_VALUE,&key) != ERROR_SUCCESS) {
-		sprintf(txt,"RegOpenKeyEx() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+	int error=RegOpenKeyEx(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,KEY_SET_VALUE,&key);
+	if (error != ERROR_SUCCESS) {
+		Error(L"RegOpenKeyEx(HKEY_CURRENT_USER,'Software\\Microsoft\\Windows\\CurrentVersion\\Run')",L"Error opening the registry.",error,__LINE__);
 		return;
 	}
 	if (on) {
 		//Get path
-		char path[MAX_PATH];
-		if (GetModuleFileName(NULL,path,sizeof(path)) == 0) {
-			sprintf(txt,"GetModuleFileName() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-			MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+		wchar_t path[MAX_PATH];
+		if (GetModuleFileName(NULL,path,MAX_PATH) == 0) {
+			Error(L"GetModuleFileName(NULL)",L"",GetLastError(),__LINE__);
 			return;
 		}
 		//Add
-		char value[MAX_PATH+10];
-		sprintf(value,(hide?"\"%s\" -hide":"\"%s\""),path);
-		if (RegSetValueEx(key,"ShutdownGuard",0,REG_SZ,value,strlen(value)+1) != ERROR_SUCCESS) {
-			sprintf(txt,"RegSetValueEx() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-			MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+		wchar_t value[MAX_PATH+10];
+		swprintf(value,(hide?L"\"%s\" -hide":L"\"%s\""),path);
+		error=RegSetValueEx(key,L10N_NAME,0,REG_SZ,(LPBYTE)value,(wcslen(value)+1)*sizeof(wchar_t));
+		if (error != ERROR_SUCCESS) {
+			Error(L"RegSetValueEx('"L10N_NAME"')",L"",error,__LINE__);
 			return;
 		}
 	}
 	else {
 		//Remove
-		if (RegDeleteValue(key,"ShutdownGuard") != ERROR_SUCCESS) {
-			sprintf(txt,"RegDeleteValue() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-			MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+		error=RegDeleteValue(key,L10N_NAME);
+		if (error != ERROR_SUCCESS) {
+			Error(L"RegDeleteValue('"L10N_NAME"')",L"",error,__LINE__);
 			return;
 		}
 	}
 	//Close key
-	if (RegCloseKey(key) != ERROR_SUCCESS) {
-		sprintf(txt,"RegCloseKey() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-		MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
-		return;
-	}
+	RegCloseKey(key);
 }
 
-LRESULT CALLBACK CBTProc(INT nCode, WPARAM wParam, LPARAM lParam) {
+void ToggleState() {
+	enabled=!enabled;
+	UpdateTray();
+}
+
+LRESULT CALLBACK ShutdownDialogProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 	if (nCode == HCBT_ACTIVATE) {
 		//Edit the caption of the buttons
-		SetDlgItemText((HWND)wParam,IDYES,"Log off");
-		SetDlgItemText((HWND)wParam,IDNO,"Shutdown");
-		SetDlgItemText((HWND)wParam,IDCANCEL,"Nothing");
+		SetDlgItemText((HWND)wParam,IDYES,L10N_SHUTDOWN_LOGOFF);
+		SetDlgItemText((HWND)wParam,IDNO,L10N_SHUTDOWN_SHUTDOWN);
+		SetDlgItemText((HWND)wParam,IDCANCEL,L10N_SHUTDOWN_NOTHING);
 	}
 	return 0;
 }
 
 void AskShutdown() {
-	HHOOK hhk=SetWindowsHookEx(WH_CBT, &CBTProc, 0, GetCurrentThreadId());
-	int response=MessageBox(NULL, "What do you want to do?", "ShutdownGuard", MB_ICONQUESTION|MB_YESNOCANCEL|MB_DEFBUTTON2|MB_SYSTEMMODAL);
+	HHOOK hhk=SetWindowsHookEx(WH_CBT, &ShutdownDialogProc, 0, GetCurrentThreadId());
+	int response=MessageBox(NULL, L10N_SHUTDOWN_ASK, L10N_NAME, MB_ICONQUESTION|MB_YESNOCANCEL|MB_DEFBUTTON2|MB_SYSTEMMODAL);
 	UnhookWindowsHookEx(hhk);
 	if (response == IDYES || response == IDNO) {
 		enabled=0;
+		hide=0;
 		UpdateTray();
 		if (response == IDYES) {
 			ExitWindowsEx(EWX_LOGOFF,0);
@@ -359,9 +375,8 @@ void AskShutdown() {
 		else {
 			//Get process token
 			HANDLE hToken;
-			if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY, &hToken) == 0) {
-				sprintf(txt,"Could not get privilege to shutdown computer. Try shutting down manually.\n\nError message:\nOpenProcessToken() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-				MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+			if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,&hToken) == 0) {
+				Error(L"OpenProcessToken()",L"Could not get privilege to shutdown computer. Try shutting down manually.",GetLastError(),__LINE__);
 				return;
 			}
 			
@@ -374,8 +389,7 @@ void AskShutdown() {
 			//Enable SeShutdownPrivilege
 			AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0); 
 			if (GetLastError() != ERROR_SUCCESS) {
-				sprintf(txt,"Could not get privilege to shutdown computer. Try shutting down manually.\n\nError message:\nAdjustTokenPrivileges() failed (error code: %d) in file %s, line %d.",GetLastError(),__FILE__,__LINE__);
-				MessageBox(NULL, txt, "ShutdownGuard Warning", MB_ICONWARNING|MB_OK);
+				Error(L"AdjustTokenPrivileges()",L"Could not get privilege to shutdown computer. Try shutting down manually.",GetLastError(),__LINE__);
 				return;
 			}
 			
@@ -391,7 +405,35 @@ void AskShutdown() {
 }
 
 LRESULT CALLBACK MyWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	if (msg == WM_COMMAND) {
+	if (msg == WM_ICONTRAY) {
+		if (lParam == WM_LBUTTONDOWN) {
+			ToggleState();
+		}
+		else if (lParam == WM_RBUTTONDOWN) {
+			ShowContextMenu(hwnd);
+		}
+		else if (lParam == WM_MBUTTONDOWN) {
+			AskShutdown();
+		}
+		else if (lParam == NIN_BALLOONTIMEOUT) {
+			if (hide) {
+				RemoveTray();
+			}
+		}
+		else if (lParam == NIN_BALLOONUSERCLICK) {
+			hide=0;
+			AskShutdown();
+		}
+	}
+	else if (msg == WM_ADDTRAY) {
+		hide=0;
+		UpdateTray();
+	}
+	else if (msg == WM_TASKBARCREATED) {
+		tray_added=0;
+		UpdateTray();
+	}
+	else if (msg == WM_COMMAND) {
 		int wmId=LOWORD(wParam), wmEvent=HIWORD(wParam);
 		if (wmId == SWM_TOGGLE) {
 			ToggleState();
@@ -413,15 +455,7 @@ LRESULT CALLBACK MyWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			SetAutostart(1,0);
 		}
 		else if (wmId == SWM_ABOUT) {
-			MessageBox(NULL, "ShutdownGuard - 0.2\n\
-http://shutdownguard.googlecode.com/\n\
-recover89@gmail.com\n\
-\n\
-Prevent Windows shutdown.\n\
-\n\
-You can use -hide as a parameter to hide the tray icon.\n\
-\n\
-Send feedback to recover89@gmail.com", "About ShutdownGuard", MB_ICONINFORMATION|MB_OK);
+			MessageBox(NULL, L10N_ABOUT, L10N_ABOUT_TITLE, MB_ICONINFORMATION|MB_OK);
 		}
 		else if (wmId == SWM_SHUTDOWN) {
 			AskShutdown();
@@ -430,33 +464,8 @@ Send feedback to recover89@gmail.com", "About ShutdownGuard", MB_ICONINFORMATION
 			DestroyWindow(hwnd);
 		}
 	}
-	else if (msg == WM_ICONTRAY) {
-		if (lParam == WM_LBUTTONDOWN) {
-			ToggleState();
-		}
-		else if (lParam == WM_RBUTTONDOWN) {
-			ShowContextMenu(hwnd);
-		}
-		else if (lParam == WM_MBUTTONDOWN) {
-			AskShutdown();
-		}
-		else if (lParam == NIN_BALLOONTIMEOUT) {
-			if (hide) {
-				RemoveTray();
-			}
-		}
-		else if (lParam == NIN_BALLOONUSERCLICK) {
-			hide=0;
-			AskShutdown();
-		}
-	}
-	else if (msg == WM_TASKBARCREATED) {
-		tray_added=0;
-		if (!hide) {
-			UpdateTray();
-		}
-	}
 	else if (msg == WM_DESTROY) {
+		showerror=0;
 		if (tray_added) {
 			RemoveTray();
 		}
@@ -470,7 +479,7 @@ Send feedback to recover89@gmail.com", "About ShutdownGuard", MB_ICONINFORMATION
 		if (enabled) {
 			//Prevent shutdown
 			if (vista) {
-				ShutdownBlockReasonCreate(hwnd,L"ShutdownGuard prevented Windows shutdown.");
+				ShutdownBlockReasonCreate(hwnd,L10N_VISTA_REASON);
 				hide=0;
 				UpdateTray();
 			}
@@ -488,10 +497,6 @@ Send feedback to recover89@gmail.com", "About ShutdownGuard", MB_ICONINFORMATION
 			}
 			return TRUE;
 		}
-	}
-	else if (msg == WM_ADDTRAY) {
-		hide=0;
-		UpdateTray();
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }

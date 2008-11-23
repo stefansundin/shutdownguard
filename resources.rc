@@ -23,8 +23,9 @@ BEGIN
 			VALUE "FileDescription", "ShutdownGuard"
 			VALUE "FileVersion", "0.2"
 			VALUE "InternalName", "shutdownguard"
-			VALUE "LegalCopyright", "© Stefan Sundin 2008"
 			VALUE "OriginalFilename", "ShutdownGuard.exe"
+			VALUE "CompanyName", "Stefan Sundin"
+			VALUE "LegalCopyright", "© Stefan Sundin 2008"
 		END
 	END
 	BLOCK "VarFileInfo"

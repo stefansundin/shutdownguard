@@ -1,0 +1,21 @@
+ShutdownGuard
+Made by Stefan Sundin
+
+Prevent Windows to shutdown, reboot or log off.
+When ShutdownGuard prevents something it will pop up in the tray and ask you if you want to continue.
+Middle-click the tray icon to bring up the shutdown dialog.
+
+You can use -hide as a parameter to hide the tray icon.
+
+Check for updates at http://shutdownguard.googlecode.com/
+Send feedback to recover89@gmail.com
+
+Changelog
+---------
+0.2 - 2008-11-14:
+Compatible with Vista.
+Reordered shutdown dialog buttons.
+Middle-click on the tray icon to bring up the shutdown dialog.
+
+0.1 - 2008-06-23:
+Initial release.
