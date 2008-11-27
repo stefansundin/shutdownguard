@@ -1,0 +1,47 @@
+#summary Help me localize ShutdownGuard into more languages.
+#labels Featured,Phase-Implementation,Phase-QA
+
+= Introduction =
+
+Okay, so you've decided to translate my program. Great!
+It's pretty simple, all you have to do is download a 7z file and translate two files.
+You can download the file here: [http://shutdownguard.googlecode.com/files/Localize-1.7z Localize-1.7z].
+
+If you have any problems during the process, just let me know either [mailto:recover89@gmail.com via email] or post a comment below. Even if you figure out the problem without my help, please let me know what was confusing so I can improve this page.
+
+Once you have the file, you will have to extract it with a program like [http://www.7-zip.org/ 7-zip].
+Then, rename the "_en-US_" directory to your language-territory codes.
+In "_en-US_", the "_en_" specify the language and the "_US_" specify the territory.
+E.g., here in Sweden we have "_sv_" for _Svenska_ (the Swedish language) and "_SE_" for _Sweden_ (ISO 3166-1 alpha-2 code).
+You can find your language code [http://www.loc.gov/standards/iso639-2/php/code_list.php in this list] and your territory code [http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2#Officially_assigned_code_elements in this list].
+
+= Lets translate! =
+Open _strings.h_ with a text editor, Notepad works fine.
+The first thing you see is a huge comment saying blah blah blah.
+Update the second line, replace the text "_xx-XX localization by XXX (email)_" to your language-territory, your name and your email, if you want to be credited.
+Scroll past the license block and you'll see a lot of `#define L10N_SOMETHING L"something"`. You see that there are an `L` before all the strings, it means that the string is in Unicode. !ShutdownGuard is now a Unicode program, which means it should be possible to translate the program to virtually all languages.
+
+The first one, "`L10N_FILE_VERSION`", says which localization version these strings correspond to.
+When I update the program in a way that the strings are no longer compatible, this value will change and your localized version will be outdated.
+Don't worry though, if you don't mind, I will send you an email before I release a version with new strings, giving you plenty of time to translate.
+Just leave this value, I will update it whenever it needs updating.
+
+Lets go down further, now it's time to translate the strings.
+Here's an explanation of the strings you'll see:
+|| `L10N_MENU_xxx`      || These strings are the ones in the tray menu. ||
+|| `L10N_TRAY_xxx`      || These strings are the tooltip for the tray icon. You'll notice that "_L10N_NAME_" is used here, that will be automatically replaced during compilation. ||
+|| `L10N_BALLOON`       || The balloon tip which is displayed when !ShutdownGuard prevents something. ||
+|| `L10N_VISTA_REASON`  || The text for the Vista shutdown dialog. ||
+|| `L10N_SHUTDOWN_xxx`  || The strings in the dialog asking you how you want to shutdown. ||
+|| `L10N_ABOUT_xxx`     || The about dialog. Replace "_XXX (email)_" with your name and email, if you want to be credited. ||
+
+Great, now you've translated the program, now it's time to translate the _info.txt_ file.
+Just open up _info.txt_ with Notepad and start translating. Replace "_XXX (email)_" as usual.
+You don't have to translate the changelog, but if you think it would be helpful, you are welcome to do so.
+
+= You're done! =
+That wasn't so hard, was it?
+All you have to do now is zip the directory (it doesn't have to be a 7z archive) and email it to me at [mailto:recover89@gmail.com recover89@gmail.com].
+If you want to translate the changelog in newer versions, even though no other strings have changed, let me know in the email.
+I will hopefully be able to release the translated version within a few days.
+In the future you will be able to translate my other programs as well, you can see which ones they are by taking a look at the projects linked to from [http://code.google.com/u/recover89/ http://code.google.com/u/recover89/].
