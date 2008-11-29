@@ -34,7 +34,7 @@
 //Include strings and output error if they are out of date
 #include L10N_FILE
 #if L10N_FILE_VERSION != 1
-#error Localization not up to date!
+#error Localization out of date!
 #endif
 
 //Messages
