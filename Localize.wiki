@@ -5,7 +5,7 @@
 
 Okay, so you've decided to translate my program. Great!
 It's pretty simple, all you have to do is download a 7z file and translate two files.
-You can download the file here: [http://shutdownguard.googlecode.com/files/Localize-1.7z Localize-1.7z].
+You can download the file here: [http://shutdownguard.googlecode.com/files/Localize-1b.7z Localize-1b.7z].
 
 If you have any problems during the process, just let me know either [mailto:recover89@gmail.com via email] or post a comment below. Even if you figure out the problem without my help, please let me know what was confusing so I can improve this page.
 
@@ -38,6 +38,17 @@ Here's an explanation of the strings you'll see:
 Great, now you've translated the program, now it's time to translate the _info.txt_ file.
 Just open up _info.txt_ with Notepad and start translating. Replace "_XXX (email)_" as usual.
 You don't have to translate the changelog, but if you think it would be helpful, you are welcome to do so.
+
+The final thing you need to translate is the installer.
+Open up _installer.nsh_ with Notepad. Replace "_xx-XX_" and "_XXX (email)_" as usual.
+Here's an explanation of the installer strings:
+|| `MUI_LANGUAGE`        || Replace `English` with your language. ||
+|| `LANG`                || Replace `ENGLISH` with your language. ||
+|| `L10N_RUNNING_xxx`    || These messages will pop up if !ShutdownGuard is already running. ||
+|| `L10N_CLOSING`        || This is what gets into the log if you choose to close !ShutdownGuard. ||
+|| `L10N_SHORTCUT`       || The option to put !ShutdownGuard on the start menu. ||
+|| `L10N_AUTOSTART`      || The option to put !ShutdownGuard on autostart. ||
+|| `L10N_AUTOSTART_HIDE` || This message will pop up to ask the user if he wants the tray icon to be hidden on autostart. ||
 
 = You're done! =
 That wasn't so hard, was it?
