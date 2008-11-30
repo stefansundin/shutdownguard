@@ -18,7 +18,7 @@
 !include "MUI2.nsh"
 
 Name "${L10N_NAME}"
-OutFile "build/${L10N_NAME}-${L10N_VERSION}-installer.exe"
+OutFile "build/${L10N_NAME}-${L10N_VERSION} (Installer).exe"
 InstallDir "$PROGRAMFILES\${L10N_NAME}"
 InstallDirRegKey HKCU "Software\${L10N_NAME}" "Install_Dir"
 RequestExecutionLevel user
