@@ -82,7 +82,7 @@ Section "${L10N_NAME} (${L10N_VERSION})"
 	IntCmp $LANGUAGE ${LANG_SPANISH} spanish
 	english:
 		File "build\en-US\${L10N_NAME}\*.*"
-		;Goto files_installed
+		Goto files_installed
 	spanish:
 		File "build\es-ES\${L10N_NAME}\*.*"
 		Goto files_installed
@@ -102,11 +102,11 @@ Section "$(L10N_SHORTCUT)"
 SectionEnd
 
 Section /o "$(L10N_AUTOSTART)"
-	MessageBox MB_ICONINFORMATION|MB_YESNO "$(L10N_AUTOSTART_HIDE)" IDYES hide
-	WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${L10N_NAME}" '"$INSTDIR\${L10N_NAME}.exe"'
-	Goto continue
+	MessageBox MB_ICONINFORMATION|MB_YESNO|MB_DEFBUTTON2 "$(L10N_AUTOSTART_HIDE)" IDYES hide
+		WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${L10N_NAME}" '"$INSTDIR\${L10N_NAME}.exe"'
+		Goto continue
 	hide:
-	WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${L10N_NAME}" '"$INSTDIR\${L10N_NAME}.exe" -hide'
+		WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Run" "${L10N_NAME}" '"$INSTDIR\${L10N_NAME}.exe" -hide'
 	continue:
 SectionEnd
 

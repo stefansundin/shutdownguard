@@ -11,7 +11,6 @@ windres -o build/resources.o resources.rc
 if "%1" == "all" (
 	echo Building all
 	
-	del "localization\installer.nsh"
 	for /D %%f in (localization/*) do (
 		@echo.
 		echo Building %%f
@@ -25,7 +24,6 @@ if "%1" == "all" (
 			strip "build/%%f/ShutdownGuard/ShutdownGuard.exe"
 			upx --best -qq "build/%%f/ShutdownGuard/ShutdownGuard.exe"
 		)
-		echo !include "localization\%%f\installer.nsh" >> "localization/installer.nsh"
 	)
 	
 	@echo.
