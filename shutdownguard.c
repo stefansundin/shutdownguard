@@ -6,14 +6,6 @@
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version.
-	
-	This program is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
-	
-	You should have received a copy of the GNU General Public License
-	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #define UNICODE
@@ -21,17 +13,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
 #define _WIN32_IE 0x0600
 #include <windows.h>
 
+//Localization
 #define L10N_NAME    L"ShutdownGuard"
 #define L10N_VERSION L"0.2"
-//Localization
 #ifndef L10N_FILE
 #define L10N_FILE "localization/en-US/strings.h"
 #endif
-//Include strings and output error if they are out of date
 #include L10N_FILE
 #if L10N_FILE_VERSION != 1
 #error Localization out of date!
@@ -58,24 +48,22 @@
 #define NIN_BALLOONUSERCLICK   WM_USER+5
 
 //Vista shutdown stuff missing in MinGW
-typedef void (*pfunc)();
-pfunc ShutdownBlockReasonCreate;  //BOOL WINAPI ShutdownBlockReasonCreate(HWND, LPCWSTR);
-pfunc ShutdownBlockReasonDestroy; //BOOL WINAPI ShutdownBlockReasonDestroy(HWND);
+static HINSTANCE user32=NULL;
+BOOL WINAPI (*ShutdownBlockReasonCreate)(HWND, LPCWSTR)=NULL;
+BOOL WINAPI (*ShutdownBlockReasonDestroy)(HWND)=NULL;
 
-//Stuff
-LRESULT CALLBACK MyWndProc(HWND, UINT, WPARAM, LPARAM);
-
+//Boring stuff
+LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 static HICON icon[2];
 static NOTIFYICONDATA traydata;
-static UINT WM_TASKBARCREATED;
+static UINT WM_TASKBARCREATED=0;
 static int tray_added=0;
 static int hide=0;
+static wchar_t txt[100];
 
+//Cool stuff
 static int enabled=1;
 static int vista=0;
-static HINSTANCE hinstDLL=NULL;
-
-static wchar_t txt[100];
 
 //Error message handling
 static int showerror=1;
@@ -83,7 +71,7 @@ static int showerror=1;
 LRESULT CALLBACK ErrorMsgProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 	if (nCode == HCBT_ACTIVATE) {
 		//Edit the caption of the buttons
-		SetDlgItemText((HWND)wParam,IDYES,L"Copy message");
+		SetDlgItemText((HWND)wParam,IDYES,L"Copy error");
 		SetDlgItemText((HWND)wParam,IDNO,L"OK");
 	}
 	return 0;
@@ -130,7 +118,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	WNDCLASSEX wnd;
 	wnd.cbSize=sizeof(WNDCLASSEX);
 	wnd.style=0;
-	wnd.lpfnWndProc=MyWndProc;
+	wnd.lpfnWndProc=WindowProc;
 	wnd.cbClsExtra=0;
 	wnd.cbWndExtra=0;
 	wnd.hInstance=hInst;
@@ -185,26 +173,26 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	vi.dwOSVersionInfoSize=sizeof(OSVERSIONINFO);
 	GetVersionEx(&vi);
 	if (vi.dwMajorVersion >= 6) {
-		//Load dll
-		if ((hinstDLL=LoadLibraryEx(L"user32.dll",NULL,0)) == NULL) {
+		//Load user32.dll
+		if ((user32=LoadLibraryEx(L"user32.dll",NULL,0)) == NULL) {
 			Error(L"LoadLibrary('user32.dll')",L"This really shouldn't have happened.\nGo check the "L10N_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
 		}
 		else {
 			//Get address to ShutdownBlockReasonCreate
-			if ((ShutdownBlockReasonCreate=(pfunc)GetProcAddress(hinstDLL,"ShutdownBlockReasonCreate")) == NULL) {
+			if ((ShutdownBlockReasonCreate=GetProcAddress(user32,"ShutdownBlockReasonCreate")) == NULL) {
 				Error(L"GetProcAddress('ShutdownBlockReasonCreate')",L"Failed to load Vista specific function.\nGo check the "L10N_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
 			}
 			//ShutdownBlockReasonDestroy
-			if ((ShutdownBlockReasonDestroy=(pfunc)GetProcAddress(hinstDLL,"ShutdownBlockReasonDestroy")) == NULL) {
+			if ((ShutdownBlockReasonDestroy=GetProcAddress(user32,"ShutdownBlockReasonDestroy")) == NULL) {
 				Error(L"GetProcAddress('ShutdownBlockReasonDestroy')",L"Failed to load Vista specific function.\nGo check the "L10N_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
 			}
 			vista=1;
 		}
 	}
 	
-	//Make windows query this program first
+	//Make Windows query this program first
 	if (SetProcessShutdownParameters(0x4FF,0) == 0) {
-		Error(L"SetProcessShutdownParameters()",L"This means that programs started before "L10N_NAME" will probably be closed before the shutdown can be stopped.",GetLastError(),__LINE__);
+		Error(L"SetProcessShutdownParameters(0x4FF)",L"This means that programs started before "L10N_NAME" will probably be closed before the shutdown can be stopped.",GetLastError(),__LINE__);
 	}
 	
 	//Message loop
@@ -313,8 +301,8 @@ int RemoveTray() {
 void SetAutostart(int on, int hide) {
 	//Open key
 	HKEY key;
-	int error=RegOpenKeyEx(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,KEY_SET_VALUE,&key);
-	if (error != ERROR_SUCCESS) {
+	int error;
+	if ((error=RegOpenKeyEx(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,KEY_SET_VALUE,&key)) != ERROR_SUCCESS) {
 		Error(L"RegOpenKeyEx(HKEY_CURRENT_USER,'Software\\Microsoft\\Windows\\CurrentVersion\\Run')",L"Error opening the registry.",error,__LINE__);
 		return;
 	}
@@ -328,16 +316,14 @@ void SetAutostart(int on, int hide) {
 		//Add
 		wchar_t value[MAX_PATH+10];
 		swprintf(value,(hide?L"\"%s\" -hide":L"\"%s\""),path);
-		error=RegSetValueEx(key,L10N_NAME,0,REG_SZ,(LPBYTE)value,(wcslen(value)+1)*sizeof(wchar_t));
-		if (error != ERROR_SUCCESS) {
+		if ((error=RegSetValueEx(key,L10N_NAME,0,REG_SZ,(LPBYTE)value,(wcslen(value)+1)*sizeof(wchar_t))) != ERROR_SUCCESS) {
 			Error(L"RegSetValueEx('"L10N_NAME"')",L"",error,__LINE__);
 			return;
 		}
 	}
 	else {
 		//Remove
-		error=RegDeleteValue(key,L10N_NAME);
-		if (error != ERROR_SUCCESS) {
+		if ((error=RegDeleteValue(key,L10N_NAME)) != ERROR_SUCCESS) {
 			Error(L"RegDeleteValue('"L10N_NAME"')",L"",error,__LINE__);
 			return;
 		}
@@ -404,7 +390,7 @@ void AskShutdown() {
 	}
 }
 
-LRESULT CALLBACK MyWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	if (msg == WM_ICONTRAY) {
 		if (lParam == WM_LBUTTONDOWN) {
 			ToggleState();
@@ -466,11 +452,9 @@ LRESULT CALLBACK MyWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	}
 	else if (msg == WM_DESTROY) {
 		showerror=0;
-		if (tray_added) {
-			RemoveTray();
-		}
-		if (vista && hinstDLL) {
-			FreeLibrary(hinstDLL);
+		RemoveTray();
+		if (user32) {
+			FreeLibrary(user32);
 		}
 		PostQuitMessage(0);
 		return 0;
@@ -484,7 +468,7 @@ LRESULT CALLBACK MyWndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				UpdateTray();
 			}
 			else {
-				//Show balloon, in vista it will just be automatically dismissed by the shutdown dialog
+				//Show balloon, in vista it would just be automatically dismissed by the shutdown dialog
 				traydata.uFlags|=NIF_INFO;
 				UpdateTray();
 				traydata.uFlags^=NIF_INFO;
