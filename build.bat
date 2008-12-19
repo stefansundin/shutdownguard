@@ -17,9 +17,10 @@ if "%1" == "all" (
 		if not exist "build/%%f/ShutdownGuard" (
 			mkdir "build\%%f\ShutdownGuard"
 		)
-		copy "localization\%%f\info.txt" "build/%%f/ShutdownGuard/info.txt"
+		copy "localization\%%f\info.txt" "build/%%f/ShutdownGuard"
+		copy "ShutdownGuard.ini" "build/%%f/ShutdownGuard"
 		
-		gcc -o "build/%%f/ShutdownGuard/ShutdownGuard.exe" shutdownguard.c build/resources.o -mwindows -DL10N_FILE=\"localization/%%f/strings.h\"
+		gcc -o "build/%%f/ShutdownGuard/ShutdownGuard.exe" shutdownguard.c build/resources.o -mwindows -lshlwapi -lwininet -DL10N_FILE=\"localization/%%f/strings.h\"
 		if exist "build/%%f/ShutdownGuard/ShutdownGuard.exe" (
 			strip "build/%%f/ShutdownGuard/ShutdownGuard.exe"
 			upx --best -qq "build/%%f/ShutdownGuard/ShutdownGuard.exe"
@@ -30,9 +31,12 @@ if "%1" == "all" (
 	echo Building installer
 	makensis /V2 installer.nsi
 ) else (
-	gcc -o ShutdownGuard.exe shutdownguard.c build/resources.o -mwindows
+	gcc -o ShutdownGuard.exe shutdownguard.c build/resources.o -mwindows -lshlwapi -lwininet
 	
 	if "%1" == "run" (
 		start ShutdownGuard.exe
+	)
+	if "%1" == "hide" (
+		start ShutdownGuard.exe -hide
 	)
 )

@@ -5,13 +5,21 @@ Prevent Windows to shutdown, reboot or log off.
 When ShutdownGuard prevents something it will pop up in the tray and ask you if you want to continue.
 Middle-click the tray icon to bring up the shutdown dialog.
 
+ShutdownGuard will automatically check for updates.
+You can disable this in ShutdownGuard.ini.
+
 You can use -hide as a parameter to hide the tray icon.
 
-Check for updates at http://shutdownguard.googlecode.com/
+Visit the website at http://shutdownguard.googlecode.com/
 Send feedback to recover89@gmail.com
 
 Changelog
 ---------
+trunk:
+Fixed problem with the balloon tooltip not showing up.
+Fixed problem with tray icon not being re-added when explorer crashes.
+Added update checking.
+
 0.2 - 2008-11-14:
 Compatible with Vista.
 Reordered shutdown dialog buttons.

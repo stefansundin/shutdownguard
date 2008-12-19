@@ -15,30 +15,37 @@
 #include <stdlib.h>
 #define _WIN32_IE 0x0600
 #include <windows.h>
+#include <shlwapi.h>
+#include <wininet.h>
+
+//App
+#define APP_NAME      L"ShutdownGuard"
+#define APP_VERSION   "0.3"
+#define APP_URL       L"http://shutdownguard.googlecode.com/"
+#define APP_UPDATEURL L"http://shutdownguard.googlecode.com/svn/wiki/latest-stable.txt"
+//#define DEBUG
 
 //Localization
-#define L10N_NAME    L"ShutdownGuard"
-#define L10N_VERSION L"0.2"
 #ifndef L10N_FILE
 #define L10N_FILE "localization/en-US/strings.h"
 #endif
 #include L10N_FILE
-#if L10N_FILE_VERSION != 1
+#if L10N_VERSION != 2
 #error Localization out of date!
 #endif
 
 //Messages
 #define WM_ICONTRAY            WM_USER+1
-#define WM_ADDTRAY             WM_USER+2 //This value has to remain constant through versions
 #define SWM_TOGGLE             WM_APP+1
 #define SWM_HIDE               WM_APP+2
 #define SWM_AUTOSTART_ON       WM_APP+3
 #define SWM_AUTOSTART_OFF      WM_APP+4
 #define SWM_AUTOSTART_HIDE_ON  WM_APP+5
 #define SWM_AUTOSTART_HIDE_OFF WM_APP+6
-#define SWM_ABOUT              WM_APP+7
-#define SWM_SHUTDOWN           WM_APP+8
-#define SWM_EXIT               WM_APP+9
+#define SWM_SHUTDOWN           WM_APP+7
+#define SWM_UPDATE             WM_APP+8
+#define SWM_ABOUT              WM_APP+9
+#define SWM_EXIT               WM_APP+10
 
 //Balloon stuff missing in MinGW
 #define NIIF_USER 4
@@ -56,9 +63,15 @@ BOOL WINAPI (*ShutdownBlockReasonDestroy)(HWND)=NULL;
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 static HICON icon[2];
 static NOTIFYICONDATA traydata;
-static UINT WM_TASKBARCREATED=0;
+static unsigned int WM_TASKBARCREATED=0;
+static unsigned int WM_ADDTRAY=0;
 static int tray_added=0;
 static int hide=0;
+static int update=0;
+struct {
+	wchar_t Prevent[156];
+	int CheckForUpdate;
+} settings={L10N_PREVENT,0};
 static wchar_t txt[100];
 
 //Cool stuff
@@ -86,7 +99,7 @@ void Error(wchar_t *func, wchar_t *info, int errorcode, int line) {
 		swprintf(txt,L"%s failed in file %s, line %d.\nError: %s (%d)\n\n%s", func, TEXT(__FILE__), line, errormsg, errorcode, info);
 		//Display message
 		HHOOK hhk=SetWindowsHookEx(WH_CBT, &ErrorMsgProc, 0, GetCurrentThreadId());
-		int response=MessageBox(NULL, txt, L10N_NAME" Error", MB_ICONERROR|MB_YESNO|MB_DEFBUTTON2);
+		int response=MessageBox(NULL, txt, APP_NAME" Error", MB_ICONERROR|MB_YESNO|MB_DEFBUTTON2);
 		UnhookWindowsHookEx(hhk);
 		if (response == IDYES) {
 			//Copy message to clipboard
@@ -100,12 +113,71 @@ void Error(wchar_t *func, wchar_t *info, int errorcode, int line) {
 	}
 }
 
+//Check for update
+DWORD WINAPI _CheckForUpdate() {
+	//Open connection
+	HINTERNET http, file;
+	if ((http=InternetOpen(APP_NAME" - "APP_VERSION,INTERNET_OPEN_TYPE_DIRECT,NULL,NULL,0)) == NULL) {
+		#ifdef DEBUG
+		Error(L"InternetOpen()",L"Could not establish connection.\nPlease check for update manually at "APP_URL,GetLastError(),__LINE__);
+		#endif
+		return;
+	}
+	if ((file=InternetOpenUrl(http,APP_UPDATEURL,NULL,0,INTERNET_FLAG_NO_AUTH|INTERNET_FLAG_NO_AUTO_REDIRECT|INTERNET_FLAG_NO_CACHE_WRITE|INTERNET_FLAG_NO_COOKIES|INTERNET_FLAG_NO_UI,0)) == NULL) {
+		#ifdef DEBUG
+		Error(L"InternetOpenUrl()",L"Could not establish connection.\nPlease check for update manually at "APP_URL,GetLastError(),__LINE__);
+		#endif
+		return;
+	}
+	//Read file
+	char data[20];
+	DWORD numread;
+	if (InternetReadFile(file,data,sizeof(data),&numread) == FALSE) {
+		#ifdef DEBUG
+		Error(L"InternetReadFile()",L"Could not read file.\nPlease check for update manually at "APP_URL,GetLastError(),__LINE__);
+		#endif
+		return;
+	}
+	data[numread]='\0';
+	//Get error code
+	wchar_t code[4];
+	DWORD len=sizeof(code);
+	HttpQueryInfo(file,HTTP_QUERY_STATUS_CODE,&code,&len,NULL);
+	//Close connection
+	InternetCloseHandle(file);
+	InternetCloseHandle(http);
+	
+	//Make sure the server returned 200
+	if (wcscmp(code,L"200")) {
+		#ifdef DEBUG
+		swprintf(txt,L"Server returned %s error when checking for update.\nPlease check for update manually at "APP_URL,code);
+		MessageBox(NULL, txt, APP_NAME, MB_ICONWARNING|MB_OK);
+		#endif
+		return;
+	}
+	
+	//New version available?
+	if (strcmp(data,APP_VERSION)) {
+		update=1;
+		wcsncpy(traydata.szInfo,L10N_UPDATE_BALLOON,sizeof(traydata.szInfo)/sizeof(wchar_t));
+		traydata.uFlags|=NIF_INFO;
+		UpdateTray();
+		traydata.uFlags^=NIF_INFO;
+	}
+}
+
+void CheckForUpdate() {
+	CreateThread(NULL,0,_CheckForUpdate,NULL,0,NULL);
+}
+
 //Entry point
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow) {
 	//Look for previous instance
+	WM_ADDTRAY=RegisterWindowMessage(L"AddTray");
 	HWND previnst;
-	if ((previnst=FindWindow(L10N_NAME,NULL)) != NULL) {
-		SendMessage(previnst,WM_ADDTRAY,0,0);
+	if ((previnst=FindWindow(APP_NAME,NULL)) != NULL) {
+		PostMessage(previnst,WM_ADDTRAY,0,0);
+		PostMessage(previnst,WM_USER+2,0,0); //Compatibility with old versions (this will be removed in the future)
 		return 0;
 	}
 
@@ -127,20 +199,15 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	wnd.hCursor=LoadImage(NULL, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTCOLOR|LR_SHARED);
 	wnd.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
 	wnd.lpszMenuName=NULL;
-	wnd.lpszClassName=L10N_NAME;
+	wnd.lpszClassName=APP_NAME;
 	
 	//Register class
 	RegisterClassEx(&wnd);
 	
 	//Create window
-	HWND hwnd=CreateWindowEx(0,wnd.lpszClassName, L10N_NAME, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInst, NULL);
+	HWND hwnd=CreateWindowEx(0, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInst, NULL);
 	
-	//Register TaskbarCreated so we can re-add the tray icon if explorer.exe crashes
-	if ((WM_TASKBARCREATED=RegisterWindowMessage(L"TaskbarCreated")) == 0) {
-		Error(L"RegisterWindowMessage('TaskbarCreated')",L"This means the tray icon won't be added if (or should I say when) explorer.exe crashes.",GetLastError(),__LINE__);
-	}
-	
-	//Load tray icons
+	//Load icons
 	if ((icon[0] = LoadImage(hInst, L"tray-disabled", IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR)) == NULL) {
 		Error(L"LoadImage('tray-disabled')",L"",GetLastError(),__LINE__);
 		PostQuitMessage(1);
@@ -158,9 +225,11 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	traydata.uCallbackMessage=WM_ICONTRAY;
 	//Balloon tooltip
 	traydata.uTimeout=10000;
-	wcsncpy(traydata.szInfoTitle,L10N_NAME,sizeof(traydata.szInfoTitle));
-	wcsncpy(traydata.szInfo,L10N_BALLOON,sizeof(traydata.szInfo));
+	wcsncpy(traydata.szInfoTitle,APP_NAME,sizeof(traydata.szInfoTitle)/sizeof(wchar_t));
 	traydata.dwInfoFlags=NIIF_USER;
+	
+	//Register TaskbarCreated so we can re-add the tray icon if explorer.exe crashes
+	WM_TASKBARCREATED=RegisterWindowMessage(L"TaskbarCreated");
 	
 	//Update tray icon
 	UpdateTray();
@@ -175,16 +244,16 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	if (vi.dwMajorVersion >= 6) {
 		//Load user32.dll
 		if ((user32=LoadLibraryEx(L"user32.dll",NULL,0)) == NULL) {
-			Error(L"LoadLibrary('user32.dll')",L"This really shouldn't have happened.\nGo check the "L10N_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
+			Error(L"LoadLibraryEx('user32.dll')",L"This really shouldn't have happened.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
 		}
 		else {
 			//Get address to ShutdownBlockReasonCreate
 			if ((ShutdownBlockReasonCreate=GetProcAddress(user32,"ShutdownBlockReasonCreate")) == NULL) {
-				Error(L"GetProcAddress('ShutdownBlockReasonCreate')",L"Failed to load Vista specific function.\nGo check the "L10N_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
+				Error(L"GetProcAddress('ShutdownBlockReasonCreate')",L"Failed to load Vista specific function.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
 			}
 			//ShutdownBlockReasonDestroy
 			if ((ShutdownBlockReasonDestroy=GetProcAddress(user32,"ShutdownBlockReasonDestroy")) == NULL) {
-				Error(L"GetProcAddress('ShutdownBlockReasonDestroy')",L"Failed to load Vista specific function.\nGo check the "L10N_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
+				Error(L"GetProcAddress('ShutdownBlockReasonDestroy')",L"Failed to load Vista specific function.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
 			}
 			vista=1;
 		}
@@ -192,7 +261,20 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	
 	//Make Windows query this program first
 	if (SetProcessShutdownParameters(0x4FF,0) == 0) {
-		Error(L"SetProcessShutdownParameters(0x4FF)",L"This means that programs started before "L10N_NAME" will probably be closed before the shutdown can be stopped.",GetLastError(),__LINE__);
+		Error(L"SetProcessShutdownParameters(0x4FF)",L"This means that programs started before "APP_NAME" will probably be closed before the shutdown can be stopped.",GetLastError(),__LINE__);
+	}
+	
+	//Load settings
+	wchar_t path[MAX_PATH];
+	GetModuleFileName(NULL, path, sizeof(path));
+	PathRenameExtension(path,L".ini");
+	GetPrivateProfileString(L"ShutdownGuard",L"Prevent",L10N_PREVENT,settings.Prevent,sizeof(settings.Prevent)/sizeof(wchar_t),path);
+	GetPrivateProfileString(L"Update",L"CheckForUpdate",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
+	swscanf(txt,L"%d",&settings.CheckForUpdate);
+	
+	//Check for update
+	if (settings.CheckForUpdate) {
+		CheckForUpdate();
 	}
 	
 	//Message loop
@@ -223,7 +305,7 @@ void ShowContextMenu(HWND hwnd) {
 	//Read value
 	wchar_t autostart_value[MAX_PATH+10];
 	DWORD len=sizeof(autostart_value);
-	RegQueryValueEx(key,L10N_NAME,NULL,NULL,(LPBYTE)autostart_value,&len);
+	RegQueryValueEx(key,APP_NAME,NULL,NULL,(LPBYTE)autostart_value,&len);
 	//Close key
 	RegCloseKey(key);
 	//Get path
@@ -253,6 +335,12 @@ void ShowContextMenu(HWND hwnd) {
 	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_SHUTDOWN, L10N_MENU_SHUTDOWN);
 	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_SEPARATOR, 0, NULL);
 	
+	//Update
+	if (update) {
+		InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_UPDATE, L10N_MENU_UPDATE);
+		InsertMenu(hMenu, -1, MF_BYPOSITION|MF_SEPARATOR, 0, NULL);
+	}
+	
 	//About
 	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_ABOUT, L10N_MENU_ABOUT);
 	
@@ -266,7 +354,7 @@ void ShowContextMenu(HWND hwnd) {
 }
 
 int UpdateTray() {
-	wcsncpy(traydata.szTip,(enabled?L10N_TRAY_ENABLED:L10N_TRAY_DISABLED),sizeof(traydata.szTip));
+	wcsncpy(traydata.szTip,(enabled?L10N_TRAY_ENABLED:L10N_TRAY_DISABLED),sizeof(traydata.szTip)/sizeof(wchar_t));
 	traydata.hIcon=icon[enabled];
 	
 	//Only add or modify if not hidden or if balloon will be displayed
@@ -316,15 +404,15 @@ void SetAutostart(int on, int hide) {
 		//Add
 		wchar_t value[MAX_PATH+10];
 		swprintf(value,(hide?L"\"%s\" -hide":L"\"%s\""),path);
-		if ((error=RegSetValueEx(key,L10N_NAME,0,REG_SZ,(LPBYTE)value,(wcslen(value)+1)*sizeof(wchar_t))) != ERROR_SUCCESS) {
-			Error(L"RegSetValueEx('"L10N_NAME"')",L"",error,__LINE__);
+		if ((error=RegSetValueEx(key,APP_NAME,0,REG_SZ,(LPBYTE)value,(wcslen(value)+1)*sizeof(wchar_t))) != ERROR_SUCCESS) {
+			Error(L"RegSetValueEx('"APP_NAME"')",L"",error,__LINE__);
 			return;
 		}
 	}
 	else {
 		//Remove
-		if ((error=RegDeleteValue(key,L10N_NAME)) != ERROR_SUCCESS) {
-			Error(L"RegDeleteValue('"L10N_NAME"')",L"",error,__LINE__);
+		if ((error=RegDeleteValue(key,APP_NAME)) != ERROR_SUCCESS) {
+			Error(L"RegDeleteValue('"APP_NAME"')",L"",error,__LINE__);
 			return;
 		}
 	}
@@ -349,7 +437,7 @@ LRESULT CALLBACK ShutdownDialogProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 
 void AskShutdown() {
 	HHOOK hhk=SetWindowsHookEx(WH_CBT, &ShutdownDialogProc, 0, GetCurrentThreadId());
-	int response=MessageBox(NULL, L10N_SHUTDOWN_ASK, L10N_NAME, MB_ICONQUESTION|MB_YESNOCANCEL|MB_DEFBUTTON2|MB_SYSTEMMODAL);
+	int response=MessageBox(NULL, L10N_SHUTDOWN_ASK, APP_NAME, MB_ICONQUESTION|MB_YESNOCANCEL|MB_DEFBUTTON2|MB_SYSTEMMODAL);
 	UnhookWindowsHookEx(hhk);
 	if (response == IDYES || response == IDNO) {
 		enabled=0;
@@ -408,7 +496,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		}
 		else if (lParam == NIN_BALLOONUSERCLICK) {
 			hide=0;
-			AskShutdown();
+			if (!wcscmp(traydata.szInfo,L10N_UPDATE_BALLOON)) {
+				SendMessage(hwnd,WM_COMMAND,SWM_UPDATE,0);
+			}
+			else {
+				AskShutdown();
+			}
 		}
 	}
 	else if (msg == WM_ADDTRAY) {
@@ -440,11 +533,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		else if (wmId == SWM_AUTOSTART_HIDE_OFF) {
 			SetAutostart(1,0);
 		}
-		else if (wmId == SWM_ABOUT) {
-			MessageBox(NULL, L10N_ABOUT, L10N_ABOUT_TITLE, MB_ICONINFORMATION|MB_OK);
-		}
 		else if (wmId == SWM_SHUTDOWN) {
 			AskShutdown();
+		}
+		else if (wmId == SWM_UPDATE) {
+			if (MessageBox(NULL, L10N_UPDATE_DIALOG, APP_NAME, MB_ICONINFORMATION|MB_YESNO) == IDYES) {
+				ShellExecute(NULL, L"open", APP_URL, NULL, NULL, SW_SHOWNORMAL);
+			}
+		}
+		else if (wmId == SWM_ABOUT) {
+			MessageBox(NULL, L10N_ABOUT, L10N_ABOUT_TITLE, MB_ICONINFORMATION|MB_OK);
 		}
 		else if (wmId == SWM_EXIT) {
 			DestroyWindow(hwnd);
@@ -463,12 +561,14 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		if (enabled) {
 			//Prevent shutdown
 			if (vista) {
-				ShutdownBlockReasonCreate(hwnd,L10N_VISTA_REASON);
+				ShutdownBlockReasonCreate(hwnd,settings.Prevent);
 				hide=0;
 				UpdateTray();
 			}
 			else {
 				//Show balloon, in vista it would just be automatically dismissed by the shutdown dialog
+				wcsncpy(traydata.szInfo,settings.Prevent,(sizeof(traydata.szInfo))/sizeof(wchar_t));
+				wcscat(traydata.szInfo,"\n"L10N_BALLOON);
 				traydata.uFlags|=NIF_INFO;
 				UpdateTray();
 				traydata.uFlags^=NIF_INFO;
