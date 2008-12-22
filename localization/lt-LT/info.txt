@@ -1,0 +1,33 @@
+ShutdownGuard
+Sukûrë Stefan Sundin
+Iðvertë p|b (pasmane@gmail.com)
+
+Sustabdo Windows iðsijungimà, persikrovimà ar iðsiregistravimà.
+Kai ShutdownGuard sustabdo veiksmà, dëkle parodo praneðimà su galimybe tæsti.
+Paspauskite vidurinájá pelës klaviðà, jei norite iðkviesti iðjungimo lentelæ.
+
+ShutdownGuard automatiškai ieško atnaujinimu.
+Ieškojima išjungti galite ShutdownGuard.ini.
+
+Galite naudoti parametrà '-hide', kad paslëptûmëte dëklo ikonà.
+
+Aplankykite tinklapi http://shutdownguard.googlecode.com/
+Atsiliepimus siøskite recover89@gmail.com
+
+Jei ši programa Jums naudinga, paaukokite pinigu.
+Apie aukojima galite sužinoti tinklapyje.
+
+Changelog
+---------
+0.3:
+Fixed problem with the balloon tooltip not showing up.
+Fixed problem with tray icon not being re-added when explorer crashes.
+Added update checking.
+
+0.2 - 2008-11-14:
+Compatible with Vista.
+Reordered shutdown dialog buttons.
+Middle-click on the tray icon to bring up the shutdown dialog.
+
+0.1 - 2008-06-23:
+Initial release.

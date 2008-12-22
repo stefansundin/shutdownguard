@@ -86,7 +86,7 @@ Section "${APP_NAME} (${APP_VERSION})"
 		MessageBox MB_ICONINFORMATION|MB_YESNO "$(L10N_RUNNING_INSTALL)" IDNO continue
 			DetailPrint "$(L10N_CLOSING)"
 			SendMessage $0 ${WM_CLOSE} 0 0
-			Sleep 200
+			Sleep 1000
 	continue:
 
 	SetOutPath "$INSTDIR"
@@ -95,13 +95,17 @@ Section "${APP_NAME} (${APP_VERSION})"
 	WriteRegStr HKCU "Software\${APP_NAME}" "Install_Dir" "$INSTDIR"
 	WriteRegStr HKCU "Software\${APP_NAME}" "Version" "${APP_VERSION}"
 
-	IntCmp $LANGUAGE ${LANG_ENGLISH} english
-	IntCmp $LANGUAGE ${LANG_SPANISH} spanish
-	english:
+	IntCmp $LANGUAGE ${LANG_ENGLISH} en-US
+	IntCmp $LANGUAGE ${LANG_SPANISH} es-ES
+	IntCmp $LANGUAGE ${LANG_LITHUANIAN} lt-LT
+	en-US:
 		File "build\en-US\${APP_NAME}\*"
 		Goto files_installed
-	spanish:
+	es-ES:
 		File "build\es-ES\${APP_NAME}\*"
+		Goto files_installed
+	lt-LT:
+		File "build\lt-LT\${APP_NAME}\*"
 		Goto files_installed
 
 	files_installed:
@@ -143,7 +147,7 @@ Section "Uninstall"
 		MessageBox MB_ICONINFORMATION|MB_YESNO "$(L10N_RUNNING_UNINSTALL)" IDNO continue
 			DetailPrint "$(L10N_CLOSING)"
 			SendMessage $0 ${WM_CLOSE} 0 0
-			Sleep 200
+			Sleep 1000
 	continue:
 
 	Delete /REBOOTOK "$INSTDIR\${APP_NAME}.exe"

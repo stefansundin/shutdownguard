@@ -63,8 +63,8 @@ BOOL WINAPI (*ShutdownBlockReasonDestroy)(HWND)=NULL;
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 static HICON icon[2];
 static NOTIFYICONDATA traydata;
-static unsigned int WM_TASKBARCREATED=0;
-static unsigned int WM_ADDTRAY=0;
+static UINT WM_TASKBARCREATED=0;
+static UINT WM_ADDTRAY=0;
 static int tray_added=0;
 static int hide=0;
 static int update=0;
@@ -72,7 +72,7 @@ struct {
 	wchar_t Prevent[156];
 	int CheckForUpdate;
 } settings={L10N_PREVENT,0};
-static wchar_t txt[100];
+static wchar_t txt[1000];
 
 //Cool stuff
 static int enabled=1;
@@ -243,8 +243,8 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	GetVersionEx(&vi);
 	if (vi.dwMajorVersion >= 6) {
 		//Load user32.dll
-		if ((user32=LoadLibraryEx(L"user32.dll",NULL,0)) == NULL) {
-			Error(L"LoadLibraryEx('user32.dll')",L"This really shouldn't have happened.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
+		if ((user32=LoadLibrary(L"user32.dll")) == NULL) {
+			Error(L"LoadLibrary('user32.dll')",L"This really shouldn't have happened.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
 		}
 		else {
 			//Get address to ShutdownBlockReasonCreate
@@ -266,7 +266,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	
 	//Load settings
 	wchar_t path[MAX_PATH];
-	GetModuleFileName(NULL, path, sizeof(path));
+	GetModuleFileName(NULL,path,sizeof(path)/sizeof(wchar_t));
 	PathRenameExtension(path,L".ini");
 	GetPrivateProfileString(L"ShutdownGuard",L"Prevent",L10N_PREVENT,settings.Prevent,sizeof(settings.Prevent)/sizeof(wchar_t),path);
 	GetPrivateProfileString(L"Update",L"CheckForUpdate",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
@@ -423,6 +423,13 @@ void SetAutostart(int on, int hide) {
 void ToggleState() {
 	enabled=!enabled;
 	UpdateTray();
+	if (enabled) {
+		//Reload settings
+		wchar_t path[MAX_PATH];
+		GetModuleFileName(NULL,path,sizeof(path)/sizeof(wchar_t));
+		PathRenameExtension(path,L".ini");
+		GetPrivateProfileString(L"ShutdownGuard",L"Prevent",L10N_PREVENT,settings.Prevent,sizeof(settings.Prevent)/sizeof(wchar_t),path);
+	}
 }
 
 LRESULT CALLBACK ShutdownDialogProc(INT nCode, WPARAM wParam, LPARAM lParam) {
