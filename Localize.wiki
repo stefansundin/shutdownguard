@@ -42,8 +42,8 @@ You don't have to translate the changelog, but if you think it would be helpful,
 The final thing you need to translate is the installer.
 Open up _installer.nsh_ with Notepad. Replace "_xx-XX_" and "_XXX (email)_" as usual.
 Here's an explanation of the installer strings:
-|| `MUI_LANGUAGE`        || Replace `English` with your language. ||
-|| `LANG`                || Replace `ENGLISH` with your language. ||
+|| `MUI_LANGUAGE`        || Replace `English` with your language in English (e.g. _Spanish_, not _Español_). ||
+|| `LANG`                || Replace `ENGLISH` with your language in English. ||
 || `L10N_RUNNING_xxx`    || These messages will pop up if !ShutdownGuard is already running. ||
 || `L10N_CLOSING`        || This is what gets into the log if you choose to close !ShutdownGuard. ||
 || `L10N_SHORTCUT`       || The option to put !ShutdownGuard on the start menu. ||
