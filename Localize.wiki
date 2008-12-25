@@ -51,6 +51,7 @@ Here's an explanation of the installer strings:
 || `L10N_SHORTCUT`       || The option to put !ShutdownGuard on the start menu. ||
 || `L10N_AUTOSTART`      || The option to put !ShutdownGuard on autostart. ||
 || `L10N_AUTOSTART_HIDE` || This message will pop up to ask the user if he wants the tray icon to be hidden on autostart. ||
+
 Do not translate the text _Localization out of date!_, it is not used in the program.
 
 = You're done! =
