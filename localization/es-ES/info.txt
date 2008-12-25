@@ -2,15 +2,28 @@ ShutdownGuard
 Programado por Stefan Sundin
 Traducido por Fabrizio Ferri
 
-Evita los apagados y reinicios indeseados de Windows. Cuando ShutdownGuard bloquea un intento de apagado aparece un aviso en la barra de tareas preguntando si quieres continuar. El clic central en el icono del área de notificación invocará el cuadro de opciones de apagado
+Evita los apagados y reinicios indeseados de Windows.
+Cuando ShutdownGuard bloquea un intento de apagado aparece un aviso en la barra de tareas preguntando si quieres continuar.
+El clic central en el icono del área de notificación invocará el cuadro de opciones de apagado
+
+ShutdownGuard buscará las actualizaciones automáticamente.
+Puedes desactivarlas editando el fichero ShutdownGuard.ini.
 
 Puedes usar el parámetro -hide para ocultar el icono de notificación.
 
-Busca actualizaciones en http://shutdownguard.googlecode.com/
+Visita mi página web en http://shutdownguard.googlecode.com/
 Envía comentarios a recover89@gmail.com
+
+Si consideras que este programa es útil, puedes realizar un donativo.
+En mi web hay más información acerca de cómo realizar un donativo.
 
 Historial de cambios
 ---------
+trunk:
+Arreglado un problema de aparición de la nota emergente
+Arreglado el problema del icono de notificación que no reaparecía al reiniciar Explorer
+Añadido comprobador de actualizaciones
+
 0.2 - 2008-11-14:
 Compatible con Vista.
 Se han vuelto a ordenar los botones del cuadro de apagado.
