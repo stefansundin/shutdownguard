@@ -19,7 +19,7 @@ En mi web hay más información acerca de cómo realizar un donativo.
 
 Historial de cambios
 ---------
-trunk:
+0.3 - 2008-12-25:
 Arreglado un problema de aparición de la nota emergente
 Arreglado el problema del icono de notificación que no reaparecía al reiniciar Explorer
 Añadido comprobador de actualizaciones
