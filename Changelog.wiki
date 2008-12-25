@@ -2,6 +2,11 @@
 
 Check [http://shutdownguard.googlecode.com/svn/trunk/localization/en-US/info.txt info.txt] if there seems to be something missing. Note that info.txt can contain changes for upcoming versions.
 
+*0.3* - 2008-12-25:
+  * Fixed problem with the balloon tooltip not showing up.
+  * Fixed problem with tray icon not being re-added when explorer crashes.
+  * Added update checking.
+
 *0.2* - 2008-11-14:
   * Compatible with Vista.
   * Reordered shutdown dialog buttons.
