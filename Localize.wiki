@@ -29,7 +29,7 @@ Just leave this value, I will update it whenever it needs updating.
 Lets go down further, now it's time to translate the strings.
 Here's an explanation of the strings you'll see:
 || `L10N_MENU_xxx`      || These strings are the ones in the tray menu. ||
-|| `L10N_TRAY_xxx`      || These strings are the tooltip for the tray icon. You'll notice that "_APP_NAME_" is used here, that will be automatically replaced during compilation. ||
+|| `L10N_TRAY_xxx`      || These strings are the tooltip for the tray icon. You'll notice that "_APP_NAME_" is used here, it will be automatically replaced during compilation. ||
 || `L10N_PREVENT`       || The default prevent message. ||
 || `L10N_BALLOON`       || The _Click here_ text that appears in the balloon tip. ||
 || `L10N_SHUTDOWN_xxx`  || The strings in the dialog asking you how you want to shutdown. ||
