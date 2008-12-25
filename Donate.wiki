@@ -21,4 +21,4 @@ The easiest way to donate to me is by [https://www.paypal.com/cgi-bin/webscr?cmd
 = Donations received =
 Donations received so far: 0$
 
-Note: This sum includes donations I've received towards my tools: SuperF4, KillKeys, TrayCD, !ShutdownGuard and AltDrag.
+Note: This sum includes donations I've received towards all my tools: SuperF4, KillKeys, TrayCD, !ShutdownGuard and AltDrag.
