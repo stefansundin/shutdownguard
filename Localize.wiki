@@ -32,7 +32,7 @@ Here's an explanation of the strings you'll see:
 || `L10N_TRAY_xxx`      || These strings are the tooltip for the tray icon. You'll notice that "_APP_NAME_" is used here, it will be automatically replaced during compilation. ||
 || `L10N_PREVENT`       || The default prevent message. ||
 || `L10N_BALLOON`       || The _Click here_ text that appears in the balloon tip. ||
-|| `L10N_SHUTDOWN_xxx`  || The strings in the dialog asking you how you want to shutdown. ||
+|| `L10N_SHUTDOWN_xxx`  || The strings in the dialog asking you how you want to shutdown. Note that the buttons (`LOGOFF`, `SHUTDOWN` and `NOTHING`) have limited width so make them short.  ||
 || `L10N_UPDATE_xxx`    || The update messages. ||
 || `L10N_ABOUT_xxx`     || The about dialog. Replace "_XXX (email)_" with your name and email, if you want to be credited. ||
 
