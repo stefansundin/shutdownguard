@@ -12,7 +12,7 @@ If you have any problems during the process, just let me know either [mailto:rec
 Once you have the file, you will have to extract it, with a program like [http://www.7-zip.org/ 7-zip] to do that.
 Then, rename the "_en-US_" directory to your language-territory codes.
 In "_en-US_", the "_en_" specify the language and the "_US_" specify the territory.
-E.g., here in Sweden we have "_sv_" for _Svenska_ (the Swedish language) and "_SE_" for _Sweden_ (ISO 3166-1 alpha-2 code).
+For example, here in Sweden we have "_sv_" for _Svenska_ (the Swedish language) and "_SE_" for _Sweden_ (ISO 3166-1 alpha-2 code).
 You can find your language code [http://www.loc.gov/standards/iso639-2/php/code_list.php in this list] and your territory code [http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2#Officially_assigned_code_elements in this list].
 
 = Lets translate! =
