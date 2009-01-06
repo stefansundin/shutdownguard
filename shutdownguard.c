@@ -23,7 +23,6 @@
 #define APP_VERSION   "0.3"
 #define APP_URL       L"http://shutdownguard.googlecode.com/"
 #define APP_UPDATEURL L"http://shutdownguard.googlecode.com/svn/wiki/latest-stable.txt"
-//#define DEBUG
 
 //Localization
 #ifndef L10N_FILE

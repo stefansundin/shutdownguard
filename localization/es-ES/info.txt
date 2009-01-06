@@ -18,7 +18,7 @@ Si consideras que este programa es útil, puedes realizar un donativo.
 En mi web hay más información acerca de cómo realizar un donativo.
 
 Historial de cambios
----------
+--------------------
 0.3 - 2008-12-25:
 Arreglado un problema de aparición de la nota emergente
 Arreglado el problema del icono de notificación que no reaparecía al reiniciar Explorer
