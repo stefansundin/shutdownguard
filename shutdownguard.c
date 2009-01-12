@@ -505,12 +505,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 		}
 		else if (lParam == NIN_BALLOONUSERCLICK) {
-			hide=0;
 			if (!wcscmp(traydata.szInfo,L10N_UPDATE_BALLOON)) {
+				hide=0;
 				SendMessage(hwnd,WM_COMMAND,SWM_UPDATE,0);
 			}
 			else {
 				AskShutdown();
+			}
+			if (hide) {
+				RemoveTray();
 			}
 		}
 	}
