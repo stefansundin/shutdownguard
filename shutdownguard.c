@@ -29,7 +29,7 @@
 #define L10N_FILE "localization/en-US/strings.h"
 #endif
 #include L10N_FILE
-#if L10N_VERSION != 2
+#if L10N_VERSION != 100
 #error Localization out of date!
 #endif
 
@@ -579,12 +579,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				UpdateTray();
 			}
 			else {
-				//Show balloon, in vista it would just be automatically dismissed by the shutdown dialog
-				wcsncpy(traydata.szInfo,settings.Prevent,(sizeof(traydata.szInfo))/sizeof(wchar_t));
-				wcscat(traydata.szInfo,"\n"L10N_BALLOON);
-				traydata.uFlags|=NIF_INFO;
-				UpdateTray();
-				traydata.uFlags^=NIF_INFO;
+				//This is the modified stuff
+				//Give the user a chance to prevent shutdown
+				if (MessageBox(NULL, settings.Prevent, APP_NAME, MB_ICONQUESTION|MB_YESNO|MB_SYSTEMMODAL) == IDNO) {
+					return TRUE;
+				}
 			}
 			return FALSE;
 		}

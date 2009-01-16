@@ -12,7 +12,7 @@
 */
 
 //This will be updated when the strings in the program changes
-#define L10N_VERSION 2
+#define L10N_VERSION 100
 
 //Strings
 #define L10N_MENU_ENABLE       L"Enable"
@@ -25,8 +25,7 @@
 #define L10N_MENU_EXIT         L"Exit"
 #define L10N_TRAY_ENABLED      APP_NAME " (enabled)"
 #define L10N_TRAY_DISABLED     APP_NAME " (disabled)"
-#define L10N_PREVENT           L"Prevented Windows shutdown."
-#define L10N_BALLOON           L"Click here to continue shutdown."
+#define L10N_PREVENT           L"Windows is shutting down. Prevent?"
 #define L10N_SHUTDOWN_ASK      L"What do you want to do?"
 #define L10N_SHUTDOWN_LOGOFF   L"Log off"
 #define L10N_SHUTDOWN_SHUTDOWN L"Shutdown"
@@ -38,8 +37,8 @@
 Made by Stefan Sundin\n\
 \n\
 Prevent Windows to shutdown, reboot or log off.\n\
-When ShutdownGuard prevents something it will pop up in the tray and ask you if you want to continue.\n\
 Middle-click the tray icon to bring up the shutdown dialog.\n\
+Custom version.\n\
 \n\
 Visit the website at "APP_URL"\n\
 Send feedback to recover89@gmail.com"
