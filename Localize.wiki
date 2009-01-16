@@ -9,16 +9,16 @@ You can download the file here: [http://shutdownguard.googlecode.com/files/Local
 
 If you have any problems during the process, just let me know either [mailto:recover89@gmail.com via email] or post a comment below. Even if you figure out the problem without my help, please let me know what was confusing so I can improve this page.
 
-Once you have the file, you will have to extract it, with a program like [http://www.7-zip.org/ 7-zip] to do that.
+Once you have the file, you will have to extract it, use a program like [http://www.7-zip.org/ 7-zip] to do that.
 Then, rename the "_en-US_" directory to your language-territory codes.
 In "_en-US_", the "_en_" specify the language and the "_US_" specify the territory.
-For example, here in Sweden we have "_sv_" for _Svenska_ (the Swedish language) and "_SE_" for _Sweden_ (ISO 3166-1 alpha-2 code).
-You can find your language code [http://www.loc.gov/standards/iso639-2/php/code_list.php in this list] and your territory code [http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2#Officially_assigned_code_elements in this list].
+For example, here in Sweden we have "_sv_" for _Svenska_ (the Swedish language) and "_SE_" for _Sweden_.
+You can find your language code [http://www.loc.gov/standards/iso639-2/php/code_list.php in this list] (the ISO 639-1 code) and your territory code [http://en.wikipedia.org/wiki/ISO_3166-1_alpha-2#Officially_assigned_code_elements in this list] (the ISO 3166-1 alpha-2 code).
 
 = Lets translate! =
-Open _strings.h_ with a text editor, Notepad works fine.
-The first thing you see is a huge comment saying blah blah blah.
-Update the second line, replace the text "_xx-XX localization by XXX (email)_" to your language-territory, your name and your email, if you want to be credited.
+Open _strings.h_ with a text editor, Notepad will work fine.
+The first thing you see is a comment with license text.
+Update the second line, update the text "_xx-XX localization by XXX (email)_" with your language-territory, your name and your email, if you want to be credited.
 Scroll past the license block and you'll see a lot of `#define L10N_SOMETHING L"something"`. You see that there are an `L` before all the strings, it means that the string is in Unicode. !ShutdownGuard is now a Unicode program, which means it should be possible to translate the program to virtually all languages.
 
 The first one, "`L10N_VERSION`", says which localization version these strings correspond to.
@@ -34,20 +34,20 @@ Here's an explanation of the strings you'll see:
 || `L10N_BALLOON`       || The _Click here_ text that appears in the balloon tip. ||
 || `L10N_SHUTDOWN_xxx`  || The strings in the dialog asking you how you want to shutdown. Note that the buttons (`LOGOFF`, `SHUTDOWN` and `NOTHING`) have limited width so make them short.  ||
 || `L10N_UPDATE_xxx`    || The update messages. ||
-|| `L10N_ABOUT_xxx`     || The about dialog. Replace "_XXX (email)_" with your name and email, if you want to be credited. ||
+|| `L10N_ABOUT_xxx`     || The about dialog. Update "_XXX (email)_" with your name and email if you want to be credited. ||
 
 Great, now you've translated the program, now it's time to translate the _info.txt_ file.
-Just open up _info.txt_ with Notepad and start translating. Replace "_XXX (email)_" as usual.
+Just open up _info.txt_ with Notepad and start translating. Update "_XXX (email)_" as usual.
 You don't have to translate the changelog, but if you think it would be helpful, you are welcome to do so.
 
 The final thing you need to translate is the installer.
-Open up _installer.nsh_ with Notepad. Replace "_xx-XX_" and "_XXX (email)_" as usual.
+Open up _installer.nsh_ with Notepad. Update "_xx-XX_" and "_XXX (email)_" as usual.
 Here's an explanation of the installer strings:
 || `MUI_LANGUAGE`        || Replace `English` with your language in English (e.g. `Spanish`, not `Español`). ||
 || `LANG`                || Replace `ENGLISH` with your language in English. ||
 || `L10N_UPDATE_xxx`     || The update messages in the installer. ||
 || `L10N_RUNNING_xxx`    || These messages will pop up if !ShutdownGuard is already running. ||
-|| `L10N_CLOSING`        || This is what gets into the log if you choose to close !ShutdownGuard. ||
+|| `L10N_CLOSING`        || This is what gets into the log if the user chooses to close !ShutdownGuard. ||
 || `L10N_SHORTCUT`       || The option to put !ShutdownGuard on the start menu. ||
 || `L10N_AUTOSTART`      || The option to put !ShutdownGuard on autostart. ||
 || `L10N_AUTOSTART_HIDE` || This message will pop up to ask the user if he wants the tray icon to be hidden on autostart. ||
