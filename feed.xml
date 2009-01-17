@@ -4,11 +4,21 @@
 	<title>ShutdownGuard</title>
 	<link href="http://shutdownguard.googlecode.com/svn/wiki/feed.xml" rel="self" />
 	<link href="http://code.google.com/p/shutdownguard/" />
-	<updated>2008-12-25T13:37:00Z</updated>
+	<updated>2009-01-17T14:40:00Z</updated>
 	<author>
 		<name>Stefan Sundin</name>
 		<email>recover89@gmail.com</email>
 	</author>
+
+	<entry>
+		<id>urn:uuid:6ce5a803-d195-4ef2-9da7-2d344ebe2e0f</id>
+		<title>ShutdownGuard - Nynorsk translation</title>
+		<link href="http://code.google.com/p/shutdownguard/" />
+		<updated>2009-01-17T14:40:00Z</updated>
+		<content type="text">
+I got a translation for Nynorsk from Jon Stødle, so now I'm releasing an updated installer and a 7z archive for Nynorsk.
+		</content>
+	</entry>
 
 	<entry>
 		<id>urn:uuid:d5b67385-c912-4946-9558-f2f3f6215d44</id>
