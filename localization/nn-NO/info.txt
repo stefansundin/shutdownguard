@@ -1,0 +1,33 @@
+ShutdownGuard
+Laga av Stefan Sundin
+Omset av Jon Stødle (jonstodle@gmail.com)
+
+Forhindrar Windows i å skru av, gjere omstart eller logge av.
+Når ShutdownGuard forhindrar noko, vil det kome ein sprettoppballong som spør om du vil halde fram.
+Trykk på skrollehjulet for å få opp avsluttingsdialogen
+
+ShutdownGuard vil sjekke for oppdateringar automatisk.
+Du kan skrue av dette i ShutdownGuard.ini.
+
+Du kan bruke -hide som ein parameter for å gøyme systemkorgikonet.
+
+Vitj vevsida på http://shutdownguard.googlecode.com/
+Send tilbakemelding til recover89@gmail.com
+
+Om du tykkjer at programmet er hendig, vurder å gje ein donasjon.
+Du kan finne ut korleis du donerer på vevsida.
+
+Endringslogg
+---------
+0.3 - 2008-12-25:
+Fiksa problemet med sprettoppballongen ikkje spratt opp.
+Fiksa problemet med systemikonet ikkje vart lagd til om Utforskaren krasja.
+La til oppdateringssjekking.
+
+0.2 - 2008-11-14:
+Kompatibel med Vista.
+Omorganiserte avsluttingsdialogknappane.
+Trykk med skrollehjuelt for å få opp avsluttingsdialogen.
+
+0.1 - 2008-06-23:
+Fyrste sleppen.

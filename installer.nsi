@@ -98,6 +98,7 @@ Section "${APP_NAME} (${APP_VERSION})"
 	IntCmp $LANGUAGE ${LANG_ENGLISH} en-US
 	IntCmp $LANGUAGE ${LANG_SPANISH} es-ES
 	IntCmp $LANGUAGE ${LANG_LITHUANIAN} lt-LT
+	IntCmp $LANGUAGE ${LANG_NORWEGIANNYNORSK} nn-NO
 	en-US:
 		File "build\en-US\${APP_NAME}\*"
 		Goto files_installed
@@ -106,6 +107,9 @@ Section "${APP_NAME} (${APP_VERSION})"
 		Goto files_installed
 	lt-LT:
 		File "build\lt-LT\${APP_NAME}\*"
+		Goto files_installed
+	nn-NO:
+		File "build\nn-NO\${APP_NAME}\*"
 		Goto files_installed
 
 	files_installed:
