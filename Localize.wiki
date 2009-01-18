@@ -18,7 +18,7 @@ You can find your language code [http://www.loc.gov/standards/iso639-2/php/code_
 = Lets translate! =
 Open _strings.h_ with a text editor, Notepad will work fine.
 The first thing you see is a comment with license text.
-Update the second line, update the text "_xx-XX localization by XXX (email)_" with your language-territory, your name and your email, if you want to be credited.
+Update the second line, which have the text "_xx-XX localization by XXX (email)_", with your language-territory, your name and your email, if you want to be credited.
 Scroll past the license block and you'll see a lot of `#define L10N_SOMETHING L"something"`. You see that there are an `L` before all the strings, it means that the string is in Unicode. !ShutdownGuard is now a Unicode program, which means it should be possible to translate the program to virtually all languages.
 
 The first one, "`L10N_VERSION`", says which localization version these strings correspond to.
