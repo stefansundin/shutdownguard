@@ -1,6 +1,6 @@
 /*
 	ShutdownGuard - Prevent Windows shutdown
-	Copyright (C) 2008  Stefan Sundin (recover89@gmail.com)
+	Copyright (C) 2009  Stefan Sundin (recover89@gmail.com)
 	
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -24,15 +24,6 @@
 #define APP_URL       L"http://shutdownguard.googlecode.com/"
 #define APP_UPDATEURL L"http://shutdownguard.googlecode.com/svn/wiki/latest-stable.txt"
 
-//Localization
-#ifndef L10N_FILE
-#define L10N_FILE "localization/en-US/strings.h"
-#endif
-#include L10N_FILE
-#if L10N_VERSION != 2
-#error Localization out of date!
-#endif
-
 //Messages
 #define WM_ICONTRAY            WM_USER+1
 #define SWM_TOGGLE             WM_APP+1
@@ -54,31 +45,57 @@
 #define NIN_BALLOONUSERCLICK   WM_USER+5
 
 //Vista shutdown stuff missing in MinGW
-static HINSTANCE user32=NULL;
+HINSTANCE user32=NULL;
 BOOL WINAPI (*ShutdownBlockReasonCreate)(HWND, LPCWSTR)=NULL;
 BOOL WINAPI (*ShutdownBlockReasonDestroy)(HWND)=NULL;
 
+//Localization
+struct strings {
+	wchar_t *menu_enable;
+	wchar_t *menu_disable;
+	wchar_t *menu_hide;
+	wchar_t *menu_autostart;
+	wchar_t *menu_shutdown;
+	wchar_t *menu_update;
+	wchar_t *menu_about;
+	wchar_t *menu_exit;
+	wchar_t *tray_enabled;
+	wchar_t *tray_disabled;
+	wchar_t *prevent;
+	wchar_t *balloon;
+	wchar_t *shutdown_ask;
+	wchar_t *shutdown_logoff;
+	wchar_t *shutdown_shutdown;
+	wchar_t *shutdown_nothing;
+	wchar_t *update_balloon;
+	wchar_t *update_dialog;
+	wchar_t *about_title;
+	wchar_t *about;
+};
+#include "localization/strings.h"
+struct strings *l10n=&en_US;
+
 //Boring stuff
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
-static HICON icon[2];
-static NOTIFYICONDATA traydata;
-static UINT WM_TASKBARCREATED=0;
-static UINT WM_ADDTRAY=0;
-static int tray_added=0;
-static int hide=0;
-static int update=0;
+HICON icon[2];
+NOTIFYICONDATA traydata;
+UINT WM_TASKBARCREATED=0;
+UINT WM_ADDTRAY=0;
+int tray_added=0;
+int hide=0;
+int update=0;
 struct {
 	wchar_t Prevent[156];
 	int CheckForUpdate;
-} settings={L10N_PREVENT,0};
-static wchar_t txt[1000];
+} settings={L"",0};
+wchar_t txt[1000];
 
 //Cool stuff
-static int enabled=1;
-static int vista=0;
+int enabled=1;
+int vista=0;
 
 //Error message handling
-static int showerror=1;
+int showerror=1;
 
 LRESULT CALLBACK ErrorMsgProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 	if (nCode == HCBT_ACTIVATE) {
@@ -158,7 +175,7 @@ DWORD WINAPI _CheckForUpdate() {
 	//New version available?
 	if (strcmp(data,APP_VERSION)) {
 		update=1;
-		wcsncpy(traydata.szInfo,L10N_UPDATE_BALLOON,sizeof(traydata.szInfo)/sizeof(wchar_t));
+		wcsncpy(traydata.szInfo,l10n->update_balloon,sizeof(traydata.szInfo)/sizeof(wchar_t));
 		traydata.uFlags|=NIF_INFO;
 		UpdateTray();
 		traydata.uFlags^=NIF_INFO;
@@ -176,10 +193,24 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	HWND previnst;
 	if ((previnst=FindWindow(APP_NAME,NULL)) != NULL) {
 		PostMessage(previnst,WM_ADDTRAY,0,0);
-		PostMessage(previnst,WM_USER+2,0,0); //Compatibility with old versions (this will be removed in the future)
 		return 0;
 	}
-
+	
+	//Load settings
+	wchar_t path[MAX_PATH];
+	GetModuleFileName(NULL,path,sizeof(path)/sizeof(wchar_t));
+	PathRenameExtension(path,L".ini");
+	GetPrivateProfileString(APP_NAME,L"Language",L"en-US",txt,sizeof(txt)/sizeof(wchar_t),path);
+	int i;
+	for (i=0; i < num_languages; i++) {
+		if (!wcscmp(txt,languages[i].code)) {
+			l10n=languages[i].strings;
+		}
+	}
+	GetPrivateProfileString(APP_NAME,L"Prevent",l10n->prevent,settings.Prevent,sizeof(settings.Prevent)/sizeof(wchar_t),path);
+	GetPrivateProfileString(L"Update",L"CheckForUpdate",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
+	swscanf(txt,L"%d",&settings.CheckForUpdate);
+	
 	//Check command line
 	if (!strcmp(szCmdLine,"-hide")) {
 		hide=1;
@@ -263,14 +294,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		Error(L"SetProcessShutdownParameters(0x4FF)",L"This means that programs started before "APP_NAME" will probably be closed before the shutdown can be stopped.",GetLastError(),__LINE__);
 	}
 	
-	//Load settings
-	wchar_t path[MAX_PATH];
-	GetModuleFileName(NULL,path,sizeof(path)/sizeof(wchar_t));
-	PathRenameExtension(path,L".ini");
-	GetPrivateProfileString(L"ShutdownGuard",L"Prevent",L10N_PREVENT,settings.Prevent,sizeof(settings.Prevent)/sizeof(wchar_t),path);
-	GetPrivateProfileString(L"Update",L"CheckForUpdate",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
-	swscanf(txt,L"%d",&settings.CheckForUpdate);
-	
 	//Check for update
 	if (settings.CheckForUpdate) {
 		CheckForUpdate();
@@ -291,10 +314,10 @@ void ShowContextMenu(HWND hwnd) {
 	HMENU hMenu=CreatePopupMenu();
 	
 	//Toggle
-	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_TOGGLE, (enabled?L10N_MENU_DISABLE:L10N_MENU_ENABLE));
+	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_TOGGLE, (enabled?l10n->menu_disable:l10n->menu_enable));
 	
 	//Hide
-	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_HIDE, L10N_MENU_HIDE);
+	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_HIDE, l10n->menu_hide);
 	
 	//Check autostart
 	int autostart_enabled=0, autostart_hide=0;
@@ -325,26 +348,26 @@ void ShowContextMenu(HWND hwnd) {
 	}
 	//Autostart
 	HMENU hAutostartMenu=CreatePopupMenu();
-	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_enabled?MF_CHECKED:0), (autostart_enabled?SWM_AUTOSTART_OFF:SWM_AUTOSTART_ON), L10N_MENU_AUTOSTART);
-	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_hide?MF_CHECKED:0), (autostart_hide?SWM_AUTOSTART_HIDE_OFF:SWM_AUTOSTART_HIDE_ON), L10N_MENU_HIDE);
-	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_POPUP, (UINT)hAutostartMenu, L10N_MENU_AUTOSTART);
+	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_enabled?MF_CHECKED:0), (autostart_enabled?SWM_AUTOSTART_OFF:SWM_AUTOSTART_ON), l10n->menu_autostart);
+	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_hide?MF_CHECKED:0), (autostart_hide?SWM_AUTOSTART_HIDE_OFF:SWM_AUTOSTART_HIDE_ON), l10n->menu_hide);
+	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_POPUP, (UINT)hAutostartMenu, l10n->menu_autostart);
 	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_SEPARATOR, 0, NULL);
 	
 	//Shutdown
-	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_SHUTDOWN, L10N_MENU_SHUTDOWN);
+	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_SHUTDOWN, l10n->menu_shutdown);
 	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_SEPARATOR, 0, NULL);
 	
 	//Update
 	if (update) {
-		InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_UPDATE, L10N_MENU_UPDATE);
+		InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_UPDATE, l10n->menu_update);
 		InsertMenu(hMenu, -1, MF_BYPOSITION|MF_SEPARATOR, 0, NULL);
 	}
 	
 	//About
-	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_ABOUT, L10N_MENU_ABOUT);
+	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_ABOUT, l10n->menu_about);
 	
 	//Exit
-	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_EXIT, L10N_MENU_EXIT);
+	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_EXIT, l10n->menu_exit);
 
 	//Track menu
 	SetForegroundWindow(hwnd);
@@ -353,7 +376,7 @@ void ShowContextMenu(HWND hwnd) {
 }
 
 int UpdateTray() {
-	wcsncpy(traydata.szTip,(enabled?L10N_TRAY_ENABLED:L10N_TRAY_DISABLED),sizeof(traydata.szTip)/sizeof(wchar_t));
+	wcsncpy(traydata.szTip,(enabled?l10n->tray_enabled:l10n->tray_disabled),sizeof(traydata.szTip)/sizeof(wchar_t));
 	traydata.hIcon=icon[enabled];
 	
 	//Only add or modify if not hidden or if balloon will be displayed
@@ -427,27 +450,34 @@ void ToggleState() {
 	enabled=!enabled;
 	UpdateTray();
 	if (enabled) {
-		//Reload settings
+		//Load settings
 		wchar_t path[MAX_PATH];
 		GetModuleFileName(NULL,path,sizeof(path)/sizeof(wchar_t));
 		PathRenameExtension(path,L".ini");
-		GetPrivateProfileString(L"ShutdownGuard",L"Prevent",L10N_PREVENT,settings.Prevent,sizeof(settings.Prevent)/sizeof(wchar_t),path);
+		GetPrivateProfileString(APP_NAME,L"Language",L"en-US",txt,sizeof(txt)/sizeof(wchar_t),path);
+		int i;
+		for (i=0; i < num_languages; i++) {
+			if (!wcscmp(txt,languages[i].code)) {
+				l10n=languages[i].strings;
+			}
+		}
+		GetPrivateProfileString(APP_NAME,L"Prevent",l10n->prevent,settings.Prevent,sizeof(settings.Prevent)/sizeof(wchar_t),path);
 	}
 }
 
 LRESULT CALLBACK ShutdownDialogProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 	if (nCode == HCBT_ACTIVATE) {
 		//Edit the caption of the buttons
-		SetDlgItemText((HWND)wParam,IDYES,L10N_SHUTDOWN_LOGOFF);
-		SetDlgItemText((HWND)wParam,IDNO,L10N_SHUTDOWN_SHUTDOWN);
-		SetDlgItemText((HWND)wParam,IDCANCEL,L10N_SHUTDOWN_NOTHING);
+		SetDlgItemText((HWND)wParam,IDYES,l10n->shutdown_logoff);
+		SetDlgItemText((HWND)wParam,IDNO,l10n->shutdown_shutdown);
+		SetDlgItemText((HWND)wParam,IDCANCEL,l10n->shutdown_nothing);
 	}
 	return 0;
 }
 
 void AskShutdown() {
 	HHOOK hhk=SetWindowsHookEx(WH_CBT, &ShutdownDialogProc, 0, GetCurrentThreadId());
-	int response=MessageBox(NULL, L10N_SHUTDOWN_ASK, APP_NAME, MB_ICONQUESTION|MB_YESNOCANCEL|MB_DEFBUTTON2|MB_SYSTEMMODAL);
+	int response=MessageBox(NULL, l10n->shutdown_ask, APP_NAME, MB_ICONQUESTION|MB_YESNOCANCEL|MB_DEFBUTTON2|MB_SYSTEMMODAL);
 	UnhookWindowsHookEx(hhk);
 	if (response == IDYES || response == IDNO) {
 		enabled=0;
@@ -490,7 +520,7 @@ void AskShutdown() {
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	if (msg == WM_ICONTRAY) {
-		if (lParam == WM_LBUTTONDOWN) {
+		if (lParam == WM_LBUTTONDOWN || lParam == WM_LBUTTONDBLCLK) {
 			ToggleState();
 		}
 		else if (lParam == WM_RBUTTONDOWN) {
@@ -505,7 +535,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 		}
 		else if (lParam == NIN_BALLOONUSERCLICK) {
-			if (!wcscmp(traydata.szInfo,L10N_UPDATE_BALLOON)) {
+			if (!wcscmp(traydata.szInfo,l10n->update_balloon)) {
 				hide=0;
 				SendMessage(hwnd,WM_COMMAND,SWM_UPDATE,0);
 			}
@@ -550,12 +580,12 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			AskShutdown();
 		}
 		else if (wmId == SWM_UPDATE) {
-			if (MessageBox(NULL, L10N_UPDATE_DIALOG, APP_NAME, MB_ICONINFORMATION|MB_YESNO) == IDYES) {
+			if (MessageBox(NULL, l10n->update_dialog, APP_NAME, MB_ICONINFORMATION|MB_YESNO) == IDYES) {
 				ShellExecute(NULL, L"open", APP_URL, NULL, NULL, SW_SHOWNORMAL);
 			}
 		}
 		else if (wmId == SWM_ABOUT) {
-			MessageBox(NULL, L10N_ABOUT, L10N_ABOUT_TITLE, MB_ICONINFORMATION|MB_OK);
+			MessageBox(NULL, l10n->about, l10n->about_title, MB_ICONINFORMATION|MB_OK);
 		}
 		else if (wmId == SWM_EXIT) {
 			DestroyWindow(hwnd);
@@ -581,7 +611,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			else {
 				//Show balloon, in vista it would just be automatically dismissed by the shutdown dialog
 				wcsncpy(traydata.szInfo,settings.Prevent,(sizeof(traydata.szInfo))/sizeof(wchar_t));
-				wcscat(traydata.szInfo,"\n"L10N_BALLOON);
+				wcscat(traydata.szInfo,L"\n");
+				wcscat(traydata.szInfo,l10n->balloon);
 				traydata.uFlags|=NIF_INFO;
 				UpdateTray();
 				traydata.uFlags^=NIF_INFO;

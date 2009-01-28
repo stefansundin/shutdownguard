@@ -18,6 +18,9 @@ You can find out how to donate on the website.
 
 Changelog
 ---------
+0.4:
+Language can now be changed in ShutdownGuard.ini.
+
 0.3 - 2008-12-25:
 Fixed problem with the balloon tooltip not showing up.
 Fixed problem with tray icon not being re-added when explorer crashes.

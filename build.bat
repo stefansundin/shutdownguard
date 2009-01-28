@@ -9,22 +9,27 @@ if not exist build (
 windres -o build/resources.o resources.rc
 
 if "%1" == "all" (
-	echo Building all
+	@echo.
+	echo Building binaries
+	if not exist "build/en-US/ShutdownGuard" (
+		mkdir "build\en-US\ShutdownGuard"
+	)
+	gcc -o "build/en-US/ShutdownGuard/ShutdownGuard.exe" shutdownguard.c build/resources.o -mwindows -lshlwapi -lwininet
+	if exist "build/en-US/ShutdownGuard/ShutdownGuard.exe" (
+		strip "build/en-US/ShutdownGuard/ShutdownGuard.exe"
+	)
 	
 	for /D %%f in (localization/*) do (
 		@echo.
-		echo Building %%f
-		if not exist "build/%%f/ShutdownGuard" (
-			mkdir "build\%%f\ShutdownGuard"
+		echo Putting together %%f
+		if not %%f == en-US (
+			if not exist "build/%%f/ShutdownGuard" (
+				mkdir "build\%%f\ShutdownGuard"
+			)
+			copy "build\en-US\ShutdownGuard\ShutdownGuard.exe" "build/%%f/ShutdownGuard"
 		)
 		copy "localization\%%f\info.txt" "build/%%f/ShutdownGuard"
 		copy "ShutdownGuard.ini" "build/%%f/ShutdownGuard"
-		
-		gcc -o "build/%%f/ShutdownGuard/ShutdownGuard.exe" shutdownguard.c build/resources.o -mwindows -lshlwapi -lwininet -DL10N_FILE=\"localization/%%f/strings.h\"
-		if exist "build/%%f/ShutdownGuard/ShutdownGuard.exe" (
-			strip "build/%%f/ShutdownGuard/ShutdownGuard.exe"
-			upx --best -qq "build/%%f/ShutdownGuard/ShutdownGuard.exe"
-		)
 	)
 	
 	@echo.

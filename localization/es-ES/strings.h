@@ -3,7 +3,7 @@
 	Do not localize APP_NAME, it will be automatically replaced.
 	Keep this file in UTF–8
 	
-	Copyright (C) 2008  Stefan Sundin (recover89@gmail.com)
+	Copyright (C) 2009  Stefan Sundin (recover89@gmail.com)
 	
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -11,30 +11,27 @@
 	(at your option) any later version.
 */
 
-//This will be updated when the strings in the program changes
-#define L10N_VERSION 2
-
-//Strings
-#define L10N_MENU_ENABLE       L"Activar"
-#define L10N_MENU_DISABLE      L"Desactivar"
-#define L10N_MENU_HIDE         L"Ocultar icono"
-#define L10N_MENU_AUTOSTART    L"Iniciar con Windows"
-#define L10N_MENU_SHUTDOWN     L"Apagar"
-#define L10N_MENU_UPDATE       L"Actualización disponible"
-#define L10N_MENU_ABOUT        L"Acerca de"
-#define L10N_MENU_EXIT         L"Salir"
-#define L10N_TRAY_ENABLED      APP_NAME " (activado)"
-#define L10N_TRAY_DISABLED     APP_NAME " (desactivado)"
-#define L10N_PREVENT           L"Se bloqueó el intento de apagado."
-#define L10N_BALLOON           L"Haz clic para continuar el apagado."
-#define L10N_SHUTDOWN_ASK      L"Elige una opción"
-#define L10N_SHUTDOWN_LOGOFF   L"Cerrar sesión"
-#define L10N_SHUTDOWN_SHUTDOWN L"Apagar"
-#define L10N_SHUTDOWN_NOTHING  L"Nada"
-#define L10N_UPDATE_BALLOON    L"¡Nueva versión disponible!"
-#define L10N_UPDATE_DIALOG     L"Una nueva versión está disponible.\n¿Ir a la página de descarga?"
-#define L10N_ABOUT_TITLE       L"Acerca de " APP_NAME
-#define L10N_ABOUT             APP_NAME " - " APP_VERSION "\n\
+struct strings es_ES={
+ /* menu_enable */       L"Activar",
+ /* menu_disable */      L"Desactivar",
+ /* menu_hide */         L"Ocultar icono",
+ /* menu_autostart */    L"Iniciar con Windows",
+ /* menu_shutdown */     L"Apagar",
+ /* menu_update */       L"Actualización disponible",
+ /* menu_about */        L"Acerca de",
+ /* menu_exit */         L"Salir",
+ /* tray_enabled */      APP_NAME " (activado)",
+ /* tray_disabled */     APP_NAME " (desactivado)",
+ /* prevent */           L"Se bloqueó el intento de apagado.",
+ /* balloon */           L"Haz clic para continuar el apagado.",
+ /* shutdown_ask */      L"Elige una opción",
+ /* shutdown_logoff */   L"Cerrar sesión",
+ /* shutdown_shutdown */ L"Apagar",
+ /* shutdown_nothing */  L"Nada",
+ /* update_balloon */    L"¡Nueva versión disponible!",
+ /* update_dialog */     L"Una nueva versión está disponible.\n¿Ir a la página de descarga?",
+ /* about_title */       L"Acerca de " APP_NAME,
+ /* about */             APP_NAME " - " APP_VERSION "\n\
 Programado por Stefan Sundin\n\
 Traducido por Fabrizio Ferri (algernon@gmail.com)\n\
 \n\
@@ -44,3 +41,4 @@ El clic central en el icono del área de notificación invocará el cuadro de op
 \n\
 Visita mi página web en "APP_URL"\n\
 Envía tus comentarios recover89@gmail.com"
+};
