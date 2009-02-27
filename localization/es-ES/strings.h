@@ -29,7 +29,7 @@ struct strings es_ES={
  /* shutdown_shutdown */ L"Apagar",
  /* shutdown_nothing */  L"Nada",
  /* update_balloon */    L"¡Nueva versión disponible!",
- /* update_dialog */     L"Una nueva versión está disponible.\n¿Ir a la página de descarga?",
+ /* update_dialog */     L"Una nueva versión está disponible.\n¿Ir a la página de descarga?\n\n(Puedes desactivar la comprobación automática de actualizaciones editando "APP_NAME".ini)",
  /* about_title */       L"Acerca de " APP_NAME,
  /* about */             APP_NAME " - " APP_VERSION "\n\
 Programado por Stefan Sundin\n\
