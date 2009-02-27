@@ -68,7 +68,7 @@ SetCompressor /SOLID lzma
 
 Var IndependentSectionState ;Helps keep track of the autostart dependency thingie
 
-Section "$(L10N_UPDATE_SECTION)"
+Section /o "$(L10N_UPDATE_SECTION)"
 	NSISdl::download "${APP_UPDATEURL}" "$TEMP\${APP_NAME}-updatecheck"
 	Pop $R0
 	StrCmp $R0 "success" +3

@@ -547,7 +547,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 		}
 	}
-	else if (msg == WM_ADDTRAY) {
+	else if (msg == WM_ADDTRAY && GetAsyncKeyState(VK_SHIFT)&0x8000) {
 		hide=0;
 		UpdateTray();
 	}
@@ -608,7 +608,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				hide=0;
 				UpdateTray();
 			}
-			else {
+			else if (!hide || GetAsyncKeyState(VK_SHIFT)&0x8000) {
 				//Show balloon, in vista it would just be automatically dismissed by the shutdown dialog
 				wcsncpy(traydata.szInfo,settings.Prevent,(sizeof(traydata.szInfo))/sizeof(wchar_t));
 				wcscat(traydata.szInfo,L"\n");
