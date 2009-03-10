@@ -19,18 +19,6 @@ Apie aukojima galite sužinoti tinklapyje.
 
 Changelog
 ---------
-Customized version:
-This customized version is made to more prevent tampering with ShutdownGuard by the user.
-Once the tray has been hidden, you must hold the Shift button when attempting shutdown to make the balloon tip show.
-You must also hold the Shift button when launching another copy to add the tray icon.
-You might want to remove this file so your users won't find that out. :)
-Be sure to hide the tray icon on autostart.
-Note that Vista can still be easily shutdown, that is beyond my control.
-There is nothing to prevent the user from terminating ShutdownGuard from other programs like the Task Manager, you must restrict that on your own.
-
-0.4 - not released yet:
-Language can now be changed in ShutdownGuard.ini.
-
 0.3 - 2008-12-25:
 Fixed problem with the balloon tooltip not showing up.
 Fixed problem with tray icon not being re-added when explorer crashes.
