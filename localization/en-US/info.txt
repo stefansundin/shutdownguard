@@ -19,6 +19,7 @@ You can find out how to donate on the website.
 Changelog
 ---------
 0.4:
+Added Silent option.
 Language can now be changed in ShutdownGuard.ini.
 
 0.3 - 2008-12-25:

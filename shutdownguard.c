@@ -86,8 +86,9 @@ int hide=0;
 int update=0;
 struct {
 	wchar_t Prevent[156];
+	int Silent;
 	int CheckForUpdate;
-} settings={L"",0};
+} settings={L"",0,0};
 wchar_t txt[1000];
 
 //Cool stuff
@@ -208,6 +209,8 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		}
 	}
 	GetPrivateProfileString(APP_NAME,L"Prevent",l10n->prevent,settings.Prevent,sizeof(settings.Prevent)/sizeof(wchar_t),path);
+	GetPrivateProfileString(APP_NAME,L"Silent",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
+	swscanf(txt,L"%d",&settings.Silent);
 	GetPrivateProfileString(L"Update",L"CheckForUpdate",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
 	swscanf(txt,L"%d",&settings.CheckForUpdate);
 	
@@ -547,7 +550,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 		}
 	}
-	else if (msg == WM_ADDTRAY) {
+	else if (msg == WM_ADDTRAY && (!settings.Silent || GetAsyncKeyState(VK_SHIFT)&0x8000)) {
 		hide=0;
 		UpdateTray();
 	}
@@ -608,7 +611,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				hide=0;
 				UpdateTray();
 			}
-			else {
+			else if (!settings.Silent || !hide || GetAsyncKeyState(VK_SHIFT)&0x800) {
 				//Show balloon, in vista it would just be automatically dismissed by the shutdown dialog
 				wcsncpy(traydata.szInfo,settings.Prevent,(sizeof(traydata.szInfo))/sizeof(wchar_t));
 				wcscat(traydata.szInfo,L"\n");
