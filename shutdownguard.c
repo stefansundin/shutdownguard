@@ -88,8 +88,10 @@ struct {
 	wchar_t *Prevent;
 	int Silent;
 	wchar_t *HelpUrl;
+	wchar_t *CustomTitle;
+	wchar_t *BalloonText;
 	int CheckForUpdate;
-} settings={NULL,0,NULL,0};
+} settings={NULL,0,NULL,NULL,NULL,0};
 wchar_t txt[1000];
 
 //Cool stuff
@@ -177,6 +179,7 @@ DWORD WINAPI _CheckForUpdate() {
 	//New version available?
 	if (strcmp(data,APP_VERSION)) {
 		update=1;
+		wcsncpy(traydata.szInfoTitle,APP_NAME,sizeof(traydata.szInfoTitle)/sizeof(wchar_t)); //CUSTOM
 		wcsncpy(traydata.szInfo,l10n->update_balloon,sizeof(traydata.szInfo)/sizeof(wchar_t));
 		traydata.uFlags|=NIF_INFO;
 		UpdateTray();
@@ -226,6 +229,18 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		settings.HelpUrl=malloc((wcslen(txt)+1)*sizeof(wchar_t));
 		wcscpy(settings.HelpUrl,txt);
 	}
+	//CustomTitle CUSTOM
+	GetPrivateProfileString(APP_NAME,L"CustomTitle",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+	if (wcslen(txt) != 0) {
+		settings.CustomTitle=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+		wcscpy(settings.CustomTitle,txt);
+	}
+	//BalloonText CUSTOM
+	GetPrivateProfileString(APP_NAME,L"BalloonText",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+	if (wcslen(txt) != 0) {
+		settings.BalloonText=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+		wcscpy(settings.BalloonText,txt);
+	}
 	//Update
 	GetPrivateProfileString(L"Update",L"CheckForUpdate",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
 	swscanf(txt,L"%d",&settings.CheckForUpdate);
@@ -274,7 +289,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	traydata.uCallbackMessage=WM_ICONTRAY;
 	//Balloon tooltip
 	traydata.uTimeout=10000;
-	wcsncpy(traydata.szInfoTitle,APP_NAME,sizeof(traydata.szInfoTitle)/sizeof(wchar_t));
+	wcsncpy(traydata.szInfoTitle,APP_NAME,sizeof(traydata.szInfoTitle)/sizeof(wchar_t)); //Not really needed because in this customized version
 	traydata.dwInfoFlags=NIIF_USER;
 	
 	//Register TaskbarCreated so we can re-add the tray icon if explorer.exe crashes
@@ -501,6 +516,26 @@ void ToggleState() {
 			settings.HelpUrl=malloc((wcslen(txt)+1)*sizeof(wchar_t));
 			wcscpy(settings.HelpUrl,txt);
 		}
+		//CustomTitle
+		if (settings.CustomTitle != NULL) {
+			free(settings.CustomTitle);
+			settings.CustomTitle=NULL;
+		}
+		GetPrivateProfileString(APP_NAME,L"CustomTitle",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+		if (wcslen(txt) != 0) {
+			settings.CustomTitle=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.CustomTitle,txt);
+		}
+		//BalloonText
+		if (settings.BalloonText != NULL) {
+			free(settings.BalloonText);
+			settings.BalloonText=NULL;
+		}
+		GetPrivateProfileString(APP_NAME,L"BalloonText",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+		if (wcslen(txt) != 0) {
+			settings.BalloonText=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.BalloonText,txt);
+		}
 		//Silent
 		GetPrivateProfileString(APP_NAME,L"Silent",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
 		swscanf(txt,L"%d",&settings.Silent);
@@ -519,7 +554,7 @@ LRESULT CALLBACK ShutdownDialogProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 
 void AskShutdown() {
 	HHOOK hhk=SetWindowsHookEx(WH_CBT, &ShutdownDialogProc, 0, GetCurrentThreadId());
-	int response=MessageBox(traydata.hWnd, l10n->shutdown_ask, APP_NAME, MB_ICONQUESTION|MB_YESNOCANCEL|(settings.HelpUrl!=NULL?MB_HELP:0)|MB_DEFBUTTON2|MB_SYSTEMMODAL);
+	int response=MessageBox(traydata.hWnd, l10n->shutdown_ask, (settings.CustomTitle?settings.CustomTitle:APP_NAME), MB_ICONQUESTION|MB_YESNOCANCEL|(settings.HelpUrl!=NULL?MB_HELP:0)|MB_DEFBUTTON2|MB_SYSTEMMODAL); //CUSTOM
 	UnhookWindowsHookEx(hhk);
 	if (response == IDYES || response == IDNO) {
 		enabled=0;
@@ -652,9 +687,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 			else if (!settings.Silent || !hide || GetAsyncKeyState(VK_SHIFT)&0x800) {
 				//Show balloon, in vista it would just be automatically dismissed by the shutdown dialog
+				wcsncpy(traydata.szInfoTitle,(settings.CustomTitle?settings.CustomTitle:APP_NAME),sizeof(traydata.szInfoTitle)/sizeof(wchar_t)); //CUSTOM
 				wcsncpy(traydata.szInfo,settings.Prevent,(sizeof(traydata.szInfo))/sizeof(wchar_t));
 				wcscat(traydata.szInfo,L"\n");
-				wcscat(traydata.szInfo,l10n->balloon);
+				wcscat(traydata.szInfo,(settings.BalloonText?settings.BalloonText:l10n->balloon));
 				traydata.uFlags|=NIF_INFO;
 				UpdateTray();
 				traydata.uFlags^=NIF_INFO;

@@ -19,6 +19,14 @@ En mi web hay más información acerca de cómo realizar un donativo.
 
 Historial de cambios
 --------------------
+Customized version:
+Added CustomTitle and BalloonText options.
+
+0.4 - upcoming changes included in custom version:
+Added Silent option.
+ADded HelpUrl option.
+Language can now be changed in ShutdownGuard.ini.
+
 0.3 - 2008-12-25:
 Arreglado un problema de aparición de la nota emergente
 Arreglado el problema del icono de notificación que no reaparecía al reiniciar Explorer

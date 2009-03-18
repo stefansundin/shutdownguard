@@ -19,6 +19,14 @@ Du kan finne ut korleis du donerer på vevsida.
 
 Endringslogg
 ---------
+Customized version:
+Added CustomTitle and BalloonText options.
+
+0.4 - upcoming changes included in custom version:
+Added Silent option.
+ADded HelpUrl option.
+Language can now be changed in ShutdownGuard.ini.
+
 0.3 - 2008-12-25:
 Fiksa problemet med sprettoppballongen ikkje spratt opp.
 Fiksa problemet med systemikonet ikkje vart lagd til om Utforskaren krasja.

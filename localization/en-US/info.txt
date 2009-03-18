@@ -18,7 +18,10 @@ You can find out how to donate on the website.
 
 Changelog
 ---------
-0.4:
+Customized version:
+Added CustomTitle and BalloonText options.
+
+0.4 - upcoming changes included in custom version:
 Added Silent option.
 ADded HelpUrl option.
 Language can now be changed in ShutdownGuard.ini.

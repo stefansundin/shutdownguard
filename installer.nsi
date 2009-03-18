@@ -26,7 +26,7 @@ ${StrLoc}
 ;General
 
 Name "${APP_NAME} ${APP_VERSION}"
-OutFile "build/${APP_NAME}-${APP_VERSION}.exe"
+OutFile "build/${APP_NAME}-${APP_VERSION}-customtext.exe"
 InstallDir "$PROGRAMFILES\${APP_NAME}"
 InstallDirRegKey HKCU "Software\${APP_NAME}" "Install_Dir"
 ;RequestExecutionLevel user

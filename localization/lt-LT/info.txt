@@ -19,6 +19,14 @@ Apie aukojima galite sužinoti tinklapyje.
 
 Changelog
 ---------
+Customized version:
+Added CustomTitle and BalloonText options.
+
+0.4 - upcoming changes included in custom version:
+Added Silent option.
+ADded HelpUrl option.
+Language can now be changed in ShutdownGuard.ini.
+
 0.3 - 2008-12-25:
 Fixed problem with the balloon tooltip not showing up.
 Fixed problem with tray icon not being re-added when explorer crashes.
