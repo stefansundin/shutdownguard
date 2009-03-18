@@ -85,10 +85,11 @@ int tray_added=0;
 int hide=0;
 int update=0;
 struct {
-	wchar_t Prevent[156];
+	wchar_t *Prevent;
 	int Silent;
+	wchar_t *HelpUrl;
 	int CheckForUpdate;
-} settings={L"",0,0};
+} settings={NULL,0,NULL,0};
 wchar_t txt[1000];
 
 //Cool stuff
@@ -201,6 +202,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	wchar_t path[MAX_PATH];
 	GetModuleFileName(NULL,path,sizeof(path)/sizeof(wchar_t));
 	PathRenameExtension(path,L".ini");
+	//Language
 	GetPrivateProfileString(APP_NAME,L"Language",L"en-US",txt,sizeof(txt)/sizeof(wchar_t),path);
 	int i;
 	for (i=0; i < num_languages; i++) {
@@ -208,9 +210,23 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 			l10n=languages[i].strings;
 		}
 	}
-	GetPrivateProfileString(APP_NAME,L"Prevent",l10n->prevent,settings.Prevent,sizeof(settings.Prevent)/sizeof(wchar_t),path);
+	//Prevent
+	settings.Prevent=l10n->prevent;
+	GetPrivateProfileString(APP_NAME,L"Prevent",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+	if (wcslen(txt) != 0) {
+		settings.Prevent=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+		wcscpy(settings.Prevent,txt);
+	}
+	//Silent
 	GetPrivateProfileString(APP_NAME,L"Silent",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
 	swscanf(txt,L"%d",&settings.Silent);
+	//HelpUrl
+	GetPrivateProfileString(APP_NAME,L"HelpUrl",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+	if (wcslen(txt) != 0 && (!wcsncmp(txt,L"http://",7) || !wcsncmp(txt,L"https://",8))) {
+		settings.HelpUrl=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+		wcscpy(settings.HelpUrl,txt);
+	}
+	//Update
 	GetPrivateProfileString(L"Update",L"CheckForUpdate",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
 	swscanf(txt,L"%d",&settings.CheckForUpdate);
 	
@@ -457,6 +473,7 @@ void ToggleState() {
 		wchar_t path[MAX_PATH];
 		GetModuleFileName(NULL,path,sizeof(path)/sizeof(wchar_t));
 		PathRenameExtension(path,L".ini");
+		//Language
 		GetPrivateProfileString(APP_NAME,L"Language",L"en-US",txt,sizeof(txt)/sizeof(wchar_t),path);
 		int i;
 		for (i=0; i < num_languages; i++) {
@@ -464,7 +481,29 @@ void ToggleState() {
 				l10n=languages[i].strings;
 			}
 		}
-		GetPrivateProfileString(APP_NAME,L"Prevent",l10n->prevent,settings.Prevent,sizeof(settings.Prevent)/sizeof(wchar_t),path);
+		//Prevent
+		if (settings.Prevent != l10n->prevent) {
+			free(settings.Prevent);
+			settings.Prevent=l10n->prevent;
+		}
+		GetPrivateProfileString(APP_NAME,L"Prevent",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+		if (wcslen(txt) != 0) {
+			settings.Prevent=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.Prevent,txt);
+		}
+		//HelpUrl
+		if (settings.HelpUrl != NULL) {
+			free(settings.HelpUrl);
+			settings.HelpUrl=NULL;
+		}
+		GetPrivateProfileString(APP_NAME,L"HelpUrl",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+		if (wcslen(txt) != 0 && (!wcsncmp(txt,L"http://",7) || !wcsncmp(txt,L"https://",8))) {
+			settings.HelpUrl=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.HelpUrl,txt);
+		}
+		//Silent
+		GetPrivateProfileString(APP_NAME,L"Silent",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
+		swscanf(txt,L"%d",&settings.Silent);
 	}
 }
 
@@ -480,7 +519,7 @@ LRESULT CALLBACK ShutdownDialogProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 
 void AskShutdown() {
 	HHOOK hhk=SetWindowsHookEx(WH_CBT, &ShutdownDialogProc, 0, GetCurrentThreadId());
-	int response=MessageBox(NULL, l10n->shutdown_ask, APP_NAME, MB_ICONQUESTION|MB_YESNOCANCEL|MB_DEFBUTTON2|MB_SYSTEMMODAL);
+	int response=MessageBox(traydata.hWnd, l10n->shutdown_ask, APP_NAME, MB_ICONQUESTION|MB_YESNOCANCEL|(settings.HelpUrl!=NULL?MB_HELP:0)|MB_DEFBUTTON2|MB_SYSTEMMODAL);
 	UnhookWindowsHookEx(hhk);
 	if (response == IDYES || response == IDNO) {
 		enabled=0;
@@ -628,6 +667,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 			return TRUE;
 		}
+	}
+	else if (msg == WM_HELP) {
+		ShellExecute(NULL, L"open", settings.HelpUrl, NULL, NULL, SW_SHOWNORMAL);
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
