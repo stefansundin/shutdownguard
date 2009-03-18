@@ -20,6 +20,7 @@ Changelog
 ---------
 0.4:
 Added Silent option.
+ADded HelpUrl option.
 Language can now be changed in ShutdownGuard.ini.
 
 0.3 - 2008-12-25:
