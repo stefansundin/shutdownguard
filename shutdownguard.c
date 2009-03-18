@@ -80,7 +80,9 @@ LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 HICON icon[2];
 NOTIFYICONDATA traydata;
 UINT WM_TASKBARCREATED=0;
+UINT WM_UPDATESETTINGS=0;
 UINT WM_ADDTRAY=0;
+UINT WM_HIDETRAY=0;
 int tray_added=0;
 int hide=0;
 int update=0;
@@ -193,11 +195,24 @@ void CheckForUpdate() {
 
 //Entry point
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow) {
+	//Check command line
+	if (!strcmp(szCmdLine,"-hide")) {
+		hide=1;
+	}
+	
 	//Look for previous instance
+	WM_UPDATESETTINGS=RegisterWindowMessage(L"UpdateSettings");
 	WM_ADDTRAY=RegisterWindowMessage(L"AddTray");
+	WM_HIDETRAY=RegisterWindowMessage(L"HideTray");
 	HWND previnst;
 	if ((previnst=FindWindow(APP_NAME,NULL)) != NULL) {
-		PostMessage(previnst,WM_ADDTRAY,0,0);
+		PostMessage(previnst,WM_UPDATESETTINGS,0,0);
+		if (hide) {
+			PostMessage(previnst,WM_HIDETRAY,0,0);
+		}
+		else {
+			PostMessage(previnst,WM_ADDTRAY,0,0);
+		}
 		return 0;
 	}
 	
@@ -244,11 +259,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	//Update
 	GetPrivateProfileString(L"Update",L"CheckForUpdate",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
 	swscanf(txt,L"%d",&settings.CheckForUpdate);
-	
-	//Check command line
-	if (!strcmp(szCmdLine,"-hide")) {
-		hide=1;
-	}
 	
 	//Create window class
 	WNDCLASSEX wnd;
@@ -484,61 +494,9 @@ void ToggleState() {
 	enabled=!enabled;
 	UpdateTray();
 	if (enabled) {
-		//Load settings
-		wchar_t path[MAX_PATH];
-		GetModuleFileName(NULL,path,sizeof(path)/sizeof(wchar_t));
-		PathRenameExtension(path,L".ini");
-		//Language
-		GetPrivateProfileString(APP_NAME,L"Language",L"en-US",txt,sizeof(txt)/sizeof(wchar_t),path);
-		int i;
-		for (i=0; i < num_languages; i++) {
-			if (!wcscmp(txt,languages[i].code)) {
-				l10n=languages[i].strings;
-			}
-		}
-		//Prevent
-		if (settings.Prevent != l10n->prevent) {
-			free(settings.Prevent);
-			settings.Prevent=l10n->prevent;
-		}
-		GetPrivateProfileString(APP_NAME,L"Prevent",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
-		if (wcslen(txt) != 0) {
-			settings.Prevent=malloc((wcslen(txt)+1)*sizeof(wchar_t));
-			wcscpy(settings.Prevent,txt);
-		}
-		//HelpUrl
-		if (settings.HelpUrl != NULL) {
-			free(settings.HelpUrl);
-			settings.HelpUrl=NULL;
-		}
-		GetPrivateProfileString(APP_NAME,L"HelpUrl",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
-		if (wcslen(txt) != 0 && (!wcsncmp(txt,L"http://",7) || !wcsncmp(txt,L"https://",8))) {
-			settings.HelpUrl=malloc((wcslen(txt)+1)*sizeof(wchar_t));
-			wcscpy(settings.HelpUrl,txt);
-		}
-		//CustomTitle
-		if (settings.CustomTitle != NULL) {
-			free(settings.CustomTitle);
-			settings.CustomTitle=NULL;
-		}
-		GetPrivateProfileString(APP_NAME,L"CustomTitle",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
-		if (wcslen(txt) != 0) {
-			settings.CustomTitle=malloc((wcslen(txt)+1)*sizeof(wchar_t));
-			wcscpy(settings.CustomTitle,txt);
-		}
-		//BalloonText
-		if (settings.BalloonText != NULL) {
-			free(settings.BalloonText);
-			settings.BalloonText=NULL;
-		}
-		GetPrivateProfileString(APP_NAME,L"BalloonText",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
-		if (wcslen(txt) != 0) {
-			settings.BalloonText=malloc((wcslen(txt)+1)*sizeof(wchar_t));
-			wcscpy(settings.BalloonText,txt);
-		}
-		//Silent
-		GetPrivateProfileString(APP_NAME,L"Silent",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
-		swscanf(txt,L"%d",&settings.Silent);
+		SendMessage(traydata.hWnd,WM_UPDATESETTINGS,0,0);
+		
+
 	}
 }
 
@@ -624,9 +582,70 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 		}
 	}
+	else if (msg == WM_UPDATESETTINGS) {
+		//Update settings
+		wchar_t path[MAX_PATH];
+		GetModuleFileName(NULL,path,sizeof(path)/sizeof(wchar_t));
+		PathRenameExtension(path,L".ini");
+		//Language
+		GetPrivateProfileString(APP_NAME,L"Language",L"en-US",txt,sizeof(txt)/sizeof(wchar_t),path);
+		int i;
+		for (i=0; i < num_languages; i++) {
+			if (!wcscmp(txt,languages[i].code)) {
+				l10n=languages[i].strings;
+			}
+		}
+		//Prevent
+		if (settings.Prevent != l10n->prevent) {
+			free(settings.Prevent);
+			settings.Prevent=l10n->prevent;
+		}
+		GetPrivateProfileString(APP_NAME,L"Prevent",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+		if (wcslen(txt) != 0) {
+			settings.Prevent=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.Prevent,txt);
+		}
+		//HelpUrl
+		if (settings.HelpUrl != NULL) {
+			free(settings.HelpUrl);
+			settings.HelpUrl=NULL;
+		}
+		GetPrivateProfileString(APP_NAME,L"HelpUrl",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+		if (wcslen(txt) != 0 && (!wcsncmp(txt,L"http://",7) || !wcsncmp(txt,L"https://",8))) {
+			settings.HelpUrl=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.HelpUrl,txt);
+		}
+		//CustomTitle
+		if (settings.CustomTitle != NULL) {
+			free(settings.CustomTitle);
+			settings.CustomTitle=NULL;
+		}
+		GetPrivateProfileString(APP_NAME,L"CustomTitle",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+		if (wcslen(txt) != 0) {
+			settings.CustomTitle=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.CustomTitle,txt);
+		}
+		//BalloonText
+		if (settings.BalloonText != NULL) {
+			free(settings.BalloonText);
+			settings.BalloonText=NULL;
+		}
+		GetPrivateProfileString(APP_NAME,L"BalloonText",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+		if (wcslen(txt) != 0) {
+			settings.BalloonText=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.BalloonText,txt);
+		}
+		//Silent
+		GetPrivateProfileString(APP_NAME,L"Silent",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
+		swscanf(txt,L"%d",&settings.Silent);
+	}
 	else if (msg == WM_ADDTRAY && (!settings.Silent || GetAsyncKeyState(VK_SHIFT)&0x8000)) {
 		hide=0;
 		UpdateTray();
+	}
+	else if (msg == WM_HIDETRAY) {
+		hide=1;
+		RemoveTray();
 	}
 	else if (msg == WM_TASKBARCREATED) {
 		tray_added=0;
