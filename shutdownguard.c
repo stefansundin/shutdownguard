@@ -413,7 +413,8 @@ int UpdateTray() {
 		int tries=0; //If trying to add, try at least five times (required on some slow systems when the program is on autostart since explorer hasn't initialized the tray area)
 		while (Shell_NotifyIcon((tray_added?NIM_MODIFY:NIM_ADD),&traydata) == FALSE) {
 			tries++;
-			if (tray_added || tries >= 5) {
+			Sleep(200);
+			if (tray_added || tries >= 20) {
 				Error(L"Shell_NotifyIcon(NIM_ADD/NIM_MODIFY)",L"Failed to update tray icon.",GetLastError(),__LINE__);
 				return 1;
 			}

@@ -64,6 +64,7 @@ Page custom PageUpgrade PageUpgradeLeave
 ;Languages
 
 !include "localization\installer.nsh"
+
 !insertmacro MUI_RESERVEFILE_LANGDLL
 
 ;Variables
@@ -141,7 +142,7 @@ Section "$(L10N_UPDATE_SECTION)" sec_update
 	done:
 SectionEnd
 
-Section "${APP_NAME} (${APP_VERSION})"
+Section "${APP_NAME} (${APP_VERSION})" sec_app
 	SectionIn RO
 
 	FindWindow $0 "${APP_NAME}" ""
@@ -161,7 +162,7 @@ Section "${APP_NAME} (${APP_VERSION})"
 	WriteRegStr HKCU "Software\${APP_NAME}" "Version" "${APP_VERSION}"
 	
 	;Rename old ini file if it exists
-	IfFileExists $0 +2
+	IfFileExists "${APP_NAME}.ini" 0 +2
 		Rename "${APP_NAME}.ini" "${APP_NAME}-old.ini"
 	
 	;Install files
@@ -288,6 +289,7 @@ Section "Uninstall"
 
 	Delete /REBOOTOK "$INSTDIR\${APP_NAME}.exe"
 	Delete /REBOOTOK "$INSTDIR\${APP_NAME}.ini"
+	Delete /REBOOTOK "$INSTDIR\${APP_NAME}-old.ini"
 	Delete /REBOOTOK "$INSTDIR\info.txt"
 	Delete /REBOOTOK "$INSTDIR\Uninstall.exe"
 	RMDir /REBOOTOK "$INSTDIR"
