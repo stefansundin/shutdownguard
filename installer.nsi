@@ -178,15 +178,15 @@ Section "${APP_NAME} (${APP_VERSION})" sec_app
 		Goto files_installed
 	es-ES:
 		File "build\es-ES\${APP_NAME}\info.txt"
-		WriteINIStr "${APP_NAME}.ini" "${APP_NAME}" "Language" "es-ES"
+		WriteINIStr "$INSTDIR\${APP_NAME}.ini" "${APP_NAME}" "Language" "es-ES"
 		Goto files_installed
 	lt-LT:
 		File "build\lt-LT\${APP_NAME}\info.txt"
-		WriteINIStr "${APP_NAME}.ini" "${APP_NAME}" "Language" "lt-LT"
+		WriteINIStr "$INSTDIR\${APP_NAME}.ini" "${APP_NAME}" "Language" "lt-LT"
 		Goto files_installed
 	nn-NO:
 		File "build\nn-NO\${APP_NAME}\info.txt"
-		WriteINIStr "${APP_NAME}.ini" "${APP_NAME}" "Language" "nn-NO"
+		WriteINIStr "$INSTDIR\${APP_NAME}.ini" "${APP_NAME}" "Language" "nn-NO"
 		Goto files_installed
 
 	files_installed:
