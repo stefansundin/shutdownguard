@@ -20,7 +20,7 @@ Apie aukojima galite sužinoti tinklapyje.
 Changelog
 ---------
 Customized version:
-Added CustomTitle and BalloonText options.
+Added CustomTitle, BalloonText and HelpText options.
 
 0.4 - upcoming changes included in custom version:
 Added Silent option.
