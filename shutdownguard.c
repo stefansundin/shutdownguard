@@ -92,6 +92,7 @@ struct {
 	wchar_t *HelpUrl;
 	wchar_t *CustomTitle;
 	wchar_t *BalloonText;
+	wchar_t *HelpText;
 	int CheckForUpdate;
 } settings={NULL,0,NULL,NULL,NULL,0};
 wchar_t txt[1000];
@@ -137,6 +138,20 @@ void Error(wchar_t *func, wchar_t *info, int errorcode, int line) {
 
 //Check for update
 DWORD WINAPI _CheckForUpdate() {
+	//Check if we are connected to the internet
+	DWORD flags; //Not used
+	int tries=0; //Try at least ten times, sleep one second between each attempt
+	while (InternetGetConnectedState(&flags,0) == FALSE) {
+		tries++;
+		Sleep(1000);
+		if (tries >= 10) {
+			#ifdef DEBUG
+			Error(L"InternetGetConnectedState()",L"No internet connection.\nPlease check for update manually at "APP_URL,GetLastError(),__LINE__);
+			#endif
+			return;
+		}
+	}
+	
 	//Open connection
 	HINTERNET http, file;
 	if ((http=InternetOpen(APP_NAME" - "APP_VERSION,INTERNET_OPEN_TYPE_DIRECT,NULL,NULL,0)) == NULL) {
@@ -256,6 +271,12 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		settings.BalloonText=malloc((wcslen(txt)+1)*sizeof(wchar_t));
 		wcscpy(settings.BalloonText,txt);
 	}
+	//HelpText CUSTOM
+	GetPrivateProfileString(APP_NAME,L"HelpText",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+	if (wcslen(txt) != 0) {
+		settings.HelpText=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+		wcscpy(settings.HelpText,txt);
+	}
 	//Update
 	GetPrivateProfileString(L"Update",L"CheckForUpdate",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
 	swscanf(txt,L"%d",&settings.CheckForUpdate);
@@ -299,7 +320,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	traydata.uCallbackMessage=WM_ICONTRAY;
 	//Balloon tooltip
 	traydata.uTimeout=10000;
-	wcsncpy(traydata.szInfoTitle,APP_NAME,sizeof(traydata.szInfoTitle)/sizeof(wchar_t)); //Not really needed because in this customized version
+	wcsncpy(traydata.szInfoTitle,APP_NAME,sizeof(traydata.szInfoTitle)/sizeof(wchar_t)); //Not really needed in this customized version
 	traydata.dwInfoFlags=NIIF_USER;
 	
 	//Register TaskbarCreated so we can re-add the tray icon if explorer.exe crashes
@@ -425,10 +446,11 @@ int UpdateTray() {
 	
 	//Only add or modify if not hidden or if balloon will be displayed
 	if (!hide || traydata.uFlags&NIF_INFO) {
-		int tries=0; //If trying to add, try at least five times (required on some slow systems when the program is on autostart since explorer hasn't initialized the tray area)
+		int tries=0; //Try at least ten times, sleep 100 ms between each attempt
 		while (Shell_NotifyIcon((tray_added?NIM_MODIFY:NIM_ADD),&traydata) == FALSE) {
 			tries++;
-			if (tray_added || tries >= 5) {
+			Sleep(100);
+			if (tries >= 10) {
 				Error(L"Shell_NotifyIcon(NIM_ADD/NIM_MODIFY)",L"Failed to update tray icon.",GetLastError(),__LINE__);
 				return 1;
 			}
@@ -495,8 +517,6 @@ void ToggleState() {
 	UpdateTray();
 	if (enabled) {
 		SendMessage(traydata.hWnd,WM_UPDATESETTINGS,0,0);
-		
-
 	}
 }
 
@@ -506,6 +526,10 @@ LRESULT CALLBACK ShutdownDialogProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 		SetDlgItemText((HWND)wParam,IDYES,l10n->shutdown_logoff);
 		SetDlgItemText((HWND)wParam,IDNO,l10n->shutdown_shutdown);
 		SetDlgItemText((HWND)wParam,IDCANCEL,l10n->shutdown_nothing);
+		//CUSTOM
+		if (settings.HelpUrl != NULL && settings.HelpText != NULL) {
+			SetDlgItemText((HWND)wParam,IDHELP,settings.HelpText);
+		}
 	}
 	return 0;
 }
@@ -635,6 +659,16 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			settings.BalloonText=malloc((wcslen(txt)+1)*sizeof(wchar_t));
 			wcscpy(settings.BalloonText,txt);
 		}
+		//HelpText
+		if (settings.HelpText != NULL) {
+			free(settings.HelpText);
+			settings.HelpText=NULL;
+		}
+		GetPrivateProfileString(APP_NAME,L"HelpText",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+		if (wcslen(txt) != 0) {
+			settings.HelpText=malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.HelpText,txt);
+		}
 		//Silent
 		GetPrivateProfileString(APP_NAME,L"Silent",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
 		swscanf(txt,L"%d",&settings.Silent);
@@ -676,7 +710,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			AskShutdown();
 		}
 		else if (wmId == SWM_UPDATE) {
-			if (MessageBox(NULL, l10n->update_dialog, APP_NAME, MB_ICONINFORMATION|MB_YESNO) == IDYES) {
+			if (MessageBox(NULL, l10n->update_dialog, APP_NAME, MB_ICONINFORMATION|MB_YESNO|MB_SYSTEMMODAL) == IDYES) {
 				ShellExecute(NULL, L"open", APP_URL, NULL, NULL, SW_SHOWNORMAL);
 			}
 		}
