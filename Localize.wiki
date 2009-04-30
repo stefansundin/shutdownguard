@@ -1,5 +1,8 @@
 #summary Help me localize ShutdownGuard into more languages.
-#labels Featured,Phase-Implementation,Phase-QA
+#labels Deprecated,Phase-Implementation,Phase-QA
+
+= Note =
+*These instructions are out of date.* I prefer that you [mailto:recover89@gmail.com email me] if you want to translate the program. Thanks.
 
 = Introduction =
 
