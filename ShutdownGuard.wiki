@@ -3,6 +3,8 @@
 
 The idea for !ShutdownGuard came from a program I made a long time ago in Delphi, named !ShutdownGuard. This C-port is a much improved version of that. You can download the old Delphi program and its source from the [http://code.google.com/p/shutdownguard/downloads/list Downloads section].
 
+Note that programs are still able to shutdown Windows if they explicitly force it. Not many programs do this but you should be aware that !ShutdownGuard currently can't block these programs. I will try to make it possible to block these programs in a future version.
+
 = Balloon tips =
 
 Initially I had some troubles getting the balloon tips to work properly. I got some help from [http://vbnet.mvps.org/index.html?code/subclass/shellnotifyballoontipclick.htm this page]. I'm very pleased with the result.
