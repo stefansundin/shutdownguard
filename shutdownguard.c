@@ -567,7 +567,7 @@ void AskShutdown() {
 			}
 			
 			//Do it!!
-			ExitWindowsEx(EWX_SHUTDOWN,0);
+			ExitWindowsEx(EWX_REBOOT,0); //CUSTOM
 
 			//Disable SeShutdownPrivilege
 			tkp.Privileges[0].Attributes=0;

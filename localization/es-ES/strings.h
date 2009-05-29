@@ -26,7 +26,7 @@ struct strings es_ES={
  /* balloon */           L"Haz clic para continuar el apagado.",
  /* shutdown_ask */      L"Elige una opción",
  /* shutdown_logoff */   L"Cerrar sesión",
- /* shutdown_shutdown */ L"Apagar",
+ /* shutdown_shutdown */ L"Restart", //CUSTOM
  /* shutdown_nothing */  L"Nada",
  /* update_balloon */    L"¡Nueva versión disponible!",
  /* update_dialog */     L"Una nueva versión está disponible.\n¿Ir a la página de descarga?\n\n(Puedes desactivar la comprobación automática de actualizaciones editando "APP_NAME".ini)",

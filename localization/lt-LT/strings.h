@@ -26,7 +26,7 @@ struct strings lt_LT={
  /* balloon */           L"Spauskite, kad išjungimas tęstųsi.",
  /* shutdown_ask */      L"Ką norite daryti?",
  /* shutdown_logoff */   L"Išsiregistruoti",
- /* shutdown_shutdown */ L"Išjungti sistemą",
+ /* shutdown_shutdown */ L"Restart", //CUSTOM
  /* shutdown_nothing */  L"Nieko",
  /* update_balloon */    L"Rasta nauja versija!",
  /* update_dialog */     L"Rasta nauja versija.\nEiti į tinklapį?",

@@ -16,7 +16,7 @@ struct strings en_US={
  /* menu_disable */      L"Disable",
  /* menu_hide */         L"Hide tray",
  /* menu_autostart */    L"Autostart",
- /* menu_shutdown */     L"Shutdown",
+ /* menu_shutdown */     L"Log off or restart", //CUSTOM
  /* menu_update */       L"Update available",
  /* menu_about */        L"About",
  /* menu_exit */         L"Exit",
@@ -26,7 +26,7 @@ struct strings en_US={
  /* balloon */           L"Click here to continue shutdown.",
  /* shutdown_ask */      L"What do you want to do?",
  /* shutdown_logoff */   L"Log off",
- /* shutdown_shutdown */ L"Shutdown",
+ /* shutdown_shutdown */ L"Restart", //CUSTOM
  /* shutdown_nothing */  L"Nothing",
  /* update_balloon */    L"New version found!",
  /* update_dialog */     L"A new version is available.\nGo to website?",
