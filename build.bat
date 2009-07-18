@@ -22,6 +22,12 @@ if "%1" == "all" (
 	)
 	strip "build/en-US/ShutdownGuard/ShutdownGuard.exe"
 	
+	gcc -o "build/en-US/ShutdownGuard/patch.dll" patch.c -mdll
+	if not exist "build/en-US/ShutdownGuard/patch.dll" (
+		exit /b
+	)
+	strip "build/en-US/ShutdownGuard/patch.dll"
+	
 	for /D %%f in (localization/*) do (
 		@echo.
 		echo Putting together %%f
@@ -30,6 +36,7 @@ if "%1" == "all" (
 				mkdir "build\%%f\ShutdownGuard"
 			)
 			copy "build\en-US\ShutdownGuard\ShutdownGuard.exe" "build/%%f/ShutdownGuard"
+			copy "build\en-US\ShutdownGuard\patch.dll" "build/%%f/ShutdownGuard"
 		)
 		copy "localization\%%f\info.txt" "build/%%f/ShutdownGuard"
 		copy "ShutdownGuard.ini" "build/%%f/ShutdownGuard"
@@ -41,6 +48,7 @@ if "%1" == "all" (
 	makensis /V2 installer.nsi
 ) else (
 	gcc -o ShutdownGuard.exe shutdownguard.c build/resources.o -mwindows -lshlwapi -lwininet -DDEBUG
+	gcc -o patch.dll patch.c -mdll -DDEBUG
 	
 	if "%1" == "run" (
 		start ShutdownGuard.exe

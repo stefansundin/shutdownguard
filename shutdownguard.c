@@ -95,6 +95,7 @@ struct {
 wchar_t txt[1000];
 
 //Cool stuff
+UINT WM_SHUTDOWNBLOCKED=0;
 int enabled=1;
 int vista=0;
 
@@ -211,10 +212,13 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		hide=1;
 	}
 	
-	//Look for previous instance
+	//Register messages
 	WM_UPDATESETTINGS=RegisterWindowMessage(L"UpdateSettings");
 	WM_ADDTRAY=RegisterWindowMessage(L"AddTray");
 	WM_HIDETRAY=RegisterWindowMessage(L"HideTray");
+	WM_SHUTDOWNBLOCKED=RegisterWindowMessage(L"ShutdownBlocked");
+	
+	//Look for previous instance
 	HWND previnst;
 	if ((previnst=FindWindow(APP_NAME,NULL)) != NULL) {
 		PostMessage(previnst,WM_UPDATESETTINGS,0,0);
@@ -278,7 +282,15 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	RegisterClassEx(&wnd);
 	
 	//Create window
-	HWND hwnd=CreateWindowEx(0, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, hInst, NULL);
+	HWND hwnd=CreateWindowEx(0, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW^WS_SIZEBOX^WS_MAXIMIZEBOX^WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 410, 165, NULL, NULL, hInst, NULL);
+	/*
+	CreateWindowEx(0, L"BUTTON", L"Log off", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_PUSHBUTTON, 20, 90, 85, 27, hwnd, NULL, hInst, NULL);
+	CreateWindowEx(0, L"BUTTON", L"Shutdown", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON, 115, 90, 85, 27, hwnd, NULL, hInst, NULL);
+	CreateWindowEx(0, L"BUTTON", L"Reboot", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_PUSHBUTTON, 210, 90, 85, 27, hwnd, NULL, hInst, NULL);
+	CreateWindowEx(0, L"BUTTON", L"Nothing", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_PUSHBUTTON, 305, 90, 85, 27, hwnd, NULL, hInst, NULL);
+	CreateWindowEx(0, L"STATIC", L"What do you want to do?", WS_TABSTOP|WS_VISIBLE|WS_CHILD, 95, 46, 200, 25, hwnd, NULL, hInst, NULL);
+	ShowWindow(hwnd,iCmdShow);
+	*/
 	
 	//Load icons
 	if ((icon[0] = LoadImage(hInst, L"tray-disabled", IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR)) == NULL) {
@@ -341,6 +353,9 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	if (settings.CheckForUpdate) {
 		CheckForUpdate();
 	}
+	
+	//Patch the IAT table of this process (proof-of-concept)
+	LoadLibrary(L"patch.dll");
 	
 	//Message loop
 	MSG msg;
@@ -509,6 +524,7 @@ LRESULT CALLBACK ShutdownDialogProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 }
 
 void AskShutdown() {
+	//ShowWindow(traydata.hWnd, SW_SHOW);
 	HHOOK hhk=SetWindowsHookEx(WH_CBT, &ShutdownDialogProc, 0, GetCurrentThreadId());
 	int response=MessageBox(traydata.hWnd, l10n->shutdown_ask, APP_NAME, MB_ICONQUESTION|MB_YESNOCANCEL|(settings.HelpUrl!=NULL?MB_HELP:0)|MB_DEFBUTTON2|MB_SYSTEMMODAL);
 	UnhookWindowsHookEx(hhk);
@@ -629,6 +645,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		tray_added=0;
 		UpdateTray();
 	}
+	else if (msg == WM_SHUTDOWNBLOCKED) {
+		//Display balloon tip
+		wcsncpy(traydata.szInfo,settings.Prevent,(sizeof(traydata.szInfo))/sizeof(wchar_t));
+		wcscat(traydata.szInfo,L"\n");
+		wcscat(traydata.szInfo,l10n->balloon);
+		traydata.uFlags|=NIF_INFO;
+		UpdateTray();
+		traydata.uFlags^=NIF_INFO;
+	}
 	else if (msg == WM_COMMAND) {
 		int wmId=LOWORD(wParam), wmEvent=HIWORD(wParam);
 		if (wmId == SWM_TOGGLE) {
@@ -702,6 +727,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	}
 	else if (msg == WM_HELP) {
 		ShellExecute(NULL, L"open", settings.HelpUrl, NULL, NULL, SW_SHOWNORMAL);
+	}
+	else if (/*msg == WM_CLOSE ||*/ (msg == WM_KEYDOWN && wParam == VK_ESCAPE)) {
+		ShowWindow(hwnd,SW_HIDE);
+		return;
+	}
+	else if (msg == WM_SYSCOMMAND && wParam&0xFFF0 == SC_CLOSE) {
+		return 0;
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
