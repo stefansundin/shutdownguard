@@ -24,6 +24,7 @@
 HMODULE app;
 PROC fnExitWindowsEx;
 UINT WM_SHUTDOWNBLOCKED=0;
+int patched=0;
 
 wchar_t txt[1000];
 
@@ -65,13 +66,13 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 	HINSTANCE dbghelp;
 	if ((dbghelp=LoadLibrary(L"dbghelp.dll")) == NULL) {
 		Error(L"LoadLibrary('dbghelp.dll')",L"Can not find dbghelp.dll.",GetLastError(),__LINE__);
-		return;
+		return 1;
 	}
 	//Get address to ImageDirectoryEntryToData
 	PVOID WINAPI (*ImageDirectoryEntryToData)(PVOID, BOOLEAN, USHORT, PULONG)=NULL;
-	if ((ImageDirectoryEntryToData=GetProcAddress(dbghelp,"ImageDirectoryEntryToData")) == NULL) {
+	if ((ImageDirectoryEntryToData=(PVOID)GetProcAddress(dbghelp,"ImageDirectoryEntryToData")) == NULL) {
 		Error(L"GetProcAddress('ImageDirectoryEntryToData')",L"Failed to load ImageDirectoryEntryToData() from dbghelp.dll.",GetLastError(),__LINE__);
-		return;
+		return 1;
 	}
 	
 	ULONG ulSize;
@@ -82,7 +83,7 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 	
 	if (pImportDesc == NULL) {
 		Error(L"pImportDesc == NULL",L"This module has no import section.",0,__LINE__);
-		return;
+		return 1;
 	}
 	
 	// Find the import descriptor containing references
@@ -96,7 +97,7 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 	
 	if (pImportDesc->Name == 0) {
 		Error(L"pImportDesc->Name == 0",L"This module doesn't import any functions from this callee.",0,__LINE__);
-		return;
+		return 1;
 	}
 
 	//Get the import address table (IAT)
@@ -107,7 +108,7 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 		// Get the address of the function address.
 		PROC* ppfn = (PROC*) &pThunk->u1.Function;
 
-		if (*ppfn == (DWORD)pfnCurrent) {
+		if (*ppfn == pfnCurrent) {
 			//The function pointers match
 			
 			//Replace function pointer
@@ -117,11 +118,12 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 			#ifdef DEBUG
 			MessageBox(NULL, L"Patching was successful", APP_NAME, MB_ICONINFORMATION|MB_OK);
 			#endif
-			return;
+			return 0;
 		}
 	}
 
 	Error(L"Patching was NOT successful",L"The function is not in the caller's import section.",0,__LINE__);
+	return 1;
 }
 
 void ShutdownBlocked(UINT uFlags, DWORD dwReason) {
@@ -138,13 +140,16 @@ BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD reason, LPVOID reserved) {
 		fnExitWindowsEx = (PROC)GetProcAddress(user32, "ExitWindowsEx");
 		FreeLibrary(user32);
 		//Patch IAT
-		PatchIAT("user32.dll", fnExitWindowsEx, ShutdownBlocked, app);
-		
+		if (PatchIAT("user32.dll", fnExitWindowsEx, (PROC)ShutdownBlocked, app) == 0) {
+			patched=1;
+		}
+		else {
+			return FALSE;
+		}
 	}
-	else if (reason == DLL_PROCESS_DETACH) {
+	else if (reason == DLL_PROCESS_DETACH && patched) {
 		//Unpatch
-		PatchIAT("user32.dll", ShutdownBlocked, fnExitWindowsEx, app);
-		
+		PatchIAT("user32.dll", (PROC)ShutdownBlocked, fnExitWindowsEx, app);
 	}
 	return TRUE;
 }

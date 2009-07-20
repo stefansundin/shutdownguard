@@ -17,6 +17,7 @@
 #include <windows.h>
 #include <shlwapi.h>
 #include <wininet.h>
+#include <psapi.h>
 
 //App
 #define APP_NAME      L"ShutdownGuard"
@@ -90,8 +91,9 @@ struct {
 	wchar_t *Prevent;
 	int Silent;
 	wchar_t *HelpUrl;
+	int PatchApps;
 	int CheckForUpdate;
-} settings={NULL,0,NULL,0};
+} settings={NULL,0,NULL,0,0};
 wchar_t txt[1000];
 
 //Cool stuff
@@ -259,6 +261,9 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		settings.HelpUrl=malloc((wcslen(txt)+1)*sizeof(wchar_t));
 		wcscpy(settings.HelpUrl,txt);
 	}
+	//PatchApps
+	GetPrivateProfileString(APP_NAME,L"PatchApps",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
+	swscanf(txt,L"%d",&settings.PatchApps);
 	//Update
 	GetPrivateProfileString(L"Update",L"CheckForUpdate",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
 	swscanf(txt,L"%d",&settings.CheckForUpdate);
@@ -355,7 +360,9 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	}
 	
 	//Patch the IAT table of this process (proof-of-concept)
-	LoadLibrary(L"patch.dll");
+	if (settings.PatchApps) {
+		PatchApps();
+	}
 	
 	//Message loop
 	MSG msg;
@@ -364,6 +371,136 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		DispatchMessage(&msg);
 	}
 	return msg.wParam;
+}
+
+int PatchApps() {
+	//Get path to patch.dll
+	char path[MAX_PATH];
+	GetModuleFileNameA(NULL,path,sizeof(path));
+	PathRemoveFileSpecA(path);
+	strcat(path,"\\patch.dll");
+	
+	//Get SeDebugPrivilege so we can access all processes
+	int SeDebugPrivilege=0;
+	//Get process token
+	HANDLE hToken;
+	TOKEN_PRIVILEGES tkp;
+	if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,&hToken) == 0) {
+		#ifdef DEBUG
+		Error(L"OpenProcessToken()",L"PatchApps()",GetLastError(),__LINE__);
+		#endif
+	}
+	else {
+		//Get LUID for SeDebugPrivilege
+		LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &tkp.Privileges[0].Luid);
+		tkp.PrivilegeCount=1;
+		tkp.Privileges[0].Attributes=SE_PRIVILEGE_ENABLED;
+		
+		//Enable SeDebugPrivilege
+		AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0); 
+		if (GetLastError() != ERROR_SUCCESS) {
+			#ifdef DEBUG
+			Error(L"AdjustTokenPrivileges()",L"PatchApps()",GetLastError(),__LINE__);
+			#endif
+		}
+		else {
+			//Got it
+			SeDebugPrivilege=1;
+		}
+	}
+	
+	//Get address to LoadLibrary
+	HMODULE kernel32=GetModuleHandle(L"kernel32.dll");
+	HMODULE WINAPI (*pfnLoadLibrary)(LPCTSTR)=NULL;
+	if ((pfnLoadLibrary=(PVOID)GetProcAddress(kernel32,"LoadLibraryA")) == NULL) {
+		Error(L"GetProcAddress('LoadLibraryA')",L"Failed to load LoadLibrary().",GetLastError(),__LINE__);
+		return;
+	}
+	
+	/*
+	wsprintf(txt, L"LoadLibraryA: %d\nGetProcAddress: %d\nLoadLibraryA == GetProcAddress(): %d", LoadLibraryA, GetProcAddress(kernel32,"LoadLibraryA"),(PROC)LoadLibraryA == GetProcAddress(kernel32,"LoadLibraryA"));
+	MessageBox(NULL, txt, APP_NAME, MB_ICONINFORMATION|MB_OK);
+	*/
+	
+	//Load QueryFullProcessImageName
+	BOOL WINAPI (*QueryFullProcessImageName)(HANDLE, DWORD, LPTSTR, PDWORD)=NULL;
+	if ((QueryFullProcessImageName=GetProcAddress(kernel32,"QueryFullProcessImageNameW")) == NULL) {
+		Error(L"GetProcAddress('QueryFullProcessImageName')",L"Failed to load QueryFullProcessImageName().",GetLastError(),__LINE__);
+		return;
+	}
+	
+	//Enumerate processes
+	DWORD pids[1024], cbNeeded;
+	if (EnumProcesses(pids, sizeof(pids), &cbNeeded) == 0) {
+		Error(L"EnumProcesses()",L"Could not enumerate processes. PatchApps failed.",GetLastError(),__LINE__);
+		return;
+	}
+	
+	//Loop pids
+	int num=cbNeeded/sizeof(DWORD);
+	int i;
+	for (i=0; i < num; i++) {
+		if (pids[i] == 0) {
+			continue;
+		}
+		HANDLE process;
+		//Really do this?
+		process=OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pids[i]);
+		if (process == NULL) {
+			wchar_t txt2[MAX_PATH];
+			wsprintf(txt2,L"Could not open process.\npid: %d",pids[i]);
+			Error(L"OpenProcess(PROCESS_QUERY_INFORMATION)",txt2,GetLastError(),__LINE__);
+			continue;
+		}
+		DWORD len=MAX_PATH;
+		if (QueryFullProcessImageName(process, 0, txt, &len) == 0) {
+			Error(L"QueryFullProcessImageName()",L"Could not get path of process.",GetLastError(),__LINE__);
+		}
+		CloseHandle(process);
+		
+		//Open process - PROCESS_ALL_ACCESS
+		//process=OpenProcess(PROCESS_ALL_ACCESS, TRUE, pids[i]);
+		process=OpenProcess(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ, TRUE, pids[i]);
+		if (process == NULL) {
+			wchar_t txt2[100];
+			wsprintf(txt2,L"Could not open process.\npid: %d",pids[i]);
+			Error(L"OpenProcess()",txt2 /*L"Could not open process."*/,GetLastError(),__LINE__);
+			continue;
+		}
+		int response=MessageBox(NULL, txt, APP_NAME, MB_ICONQUESTION|MB_YESNO);
+		if (response == IDYES) {
+			//Write dll path to process memory
+			PVOID memory=VirtualAllocEx(process, NULL, strlen(path)+1, MEM_COMMIT, PAGE_READWRITE);
+			if (memory == NULL) {
+				Error(L"VirtualAllocEx()",L"Could not allocate memory in process.",GetLastError(),__LINE__);
+				CloseHandle(process);
+				continue;
+			}
+			
+			if (WriteProcessMemory(process, memory, path, strlen(path)+1, NULL) == 0) {
+				Error(L"WriteProcessMemory()",L"Could not write memory to process.",GetLastError(),__LINE__);
+				CloseHandle(process);
+				continue;
+			}
+			
+			//Inject dll
+			if (CreateRemoteThread(process, NULL, 0, (LPTHREAD_START_ROUTINE)pfnLoadLibrary, memory, 0, NULL) == NULL) {
+				Error(L"CreateRemoteThread()",L"Could not create remote thread.",GetLastError(),__LINE__);
+				CloseHandle(process);
+			}
+			
+			//Free memory
+			//VirtualFreeEx(process, memory, strlen(path)+1, MEM_RELEASE);
+		}
+		//Close process
+		CloseHandle(process);
+	}
+	
+	//Disable SeDebugPrivilege
+	if (SeDebugPrivilege) {
+		tkp.Privileges[0].Attributes=0;
+		AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0);
+	}
 }
 
 void ShowContextMenu(HWND hwnd) {

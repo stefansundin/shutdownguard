@@ -16,7 +16,7 @@ if "%1" == "all" (
 	if not exist "build/en-US/ShutdownGuard" (
 		mkdir "build\en-US\ShutdownGuard"
 	)
-	gcc -o "build/en-US/ShutdownGuard/ShutdownGuard.exe" shutdownguard.c build/resources.o -mwindows -lshlwapi -lwininet
+	gcc -o "build/en-US/ShutdownGuard/ShutdownGuard.exe" shutdownguard.c build/resources.o -mwindows -lshlwapi -lwininet -lpsapi
 	if not exist "build/en-US/ShutdownGuard/ShutdownGuard.exe" (
 		exit /b
 	)
@@ -47,7 +47,7 @@ if "%1" == "all" (
 	echo Building installer
 	makensis /V2 installer.nsi
 ) else (
-	gcc -o ShutdownGuard.exe shutdownguard.c build/resources.o -mwindows -lshlwapi -lwininet -DDEBUG
+	gcc -o ShutdownGuard.exe shutdownguard.c build/resources.o -mwindows -lshlwapi -lwininet -lpsapi -DDEBUG
 	gcc -o patch.dll patch.c -mdll -DDEBUG
 	
 	if "%1" == "run" (
