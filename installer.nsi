@@ -10,7 +10,7 @@
 
 
 !define APP_NAME      "ShutdownGuard"
-!define APP_VERSION   "0.3"
+!define APP_VERSION   "0.4"
 !define APP_URL       "http://shutdownguard.googlecode.com/"
 !define APP_UPDATEURL "http://shutdownguard.googlecode.com/svn/wiki/latest-stable.txt"
 !define L10N_VERSION  3
@@ -29,7 +29,7 @@ Name "${APP_NAME} ${APP_VERSION}"
 OutFile "build/${APP_NAME}-${APP_VERSION}.exe"
 InstallDir "$PROGRAMFILES\${APP_NAME}"
 InstallDirRegKey HKCU "Software\${APP_NAME}" "Install_Dir"
-;RequestExecutionLevel user
+RequestExecutionLevel admin
 ShowInstDetails hide
 ShowUninstDetails show
 SetCompressor /SOLID lzma

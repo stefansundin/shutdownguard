@@ -11,7 +11,7 @@
 	(at your option) any later version.
 */
 
-struct strings lt_LT={
+struct strings lt_LT = {
  /* menu_enable */       L"Įjungti",
  /* menu_disable */      L"Išjungti",
  /* menu_hide */         L"Slėpti dėklo ikoną",

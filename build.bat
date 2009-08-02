@@ -6,10 +6,10 @@ if not exist build (
 	mkdir build
 )
 
-windres -o build/resources.o resources.rc
+windres -o build/resources.o include\resources.rc
 
 if "%1" == "all" (
-	gcc -o build\ini.exe ini.c -lshlwapi
+	gcc -o build\ini.exe include\ini.c -lshlwapi
 	
 	@echo.
 	echo Building binaries
@@ -39,7 +39,7 @@ if "%1" == "all" (
 			copy "build\en-US\ShutdownGuard\patch.dll" "build/%%f/ShutdownGuard"
 		)
 		copy "localization\%%f\info.txt" "build/%%f/ShutdownGuard"
-		copy "ShutdownGuard.ini" "build/%%f/ShutdownGuard"
+		copy ShutdownGuard.ini "build/%%f/ShutdownGuard"
 		"build\ini.exe" "build\%%f\ShutdownGuard\ShutdownGuard.ini" ShutdownGuard Language %%f
 	)
 	

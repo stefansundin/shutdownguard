@@ -11,7 +11,7 @@
 	(at your option) any later version.
 */
 
-struct strings nn_NO={
+struct strings nn_NO = {
  /* menu_enable */       L"Slå på",
  /* menu_disable */      L"Slå av",
  /* menu_hide */         L"Gøym ikon",

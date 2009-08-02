@@ -16,12 +16,11 @@
 #define _WIN32_IE 0x0600
 #include <windows.h>
 #include <shlwapi.h>
-#include <wininet.h>
 #include <psapi.h>
 
 //App
 #define APP_NAME      L"ShutdownGuard"
-#define APP_VERSION   "0.3"
+#define APP_VERSION   "0.4"
 #define APP_URL       L"http://shutdownguard.googlecode.com/"
 #define APP_UPDATEURL L"http://shutdownguard.googlecode.com/svn/wiki/latest-stable.txt"
 
@@ -46,9 +45,9 @@
 #define NIN_BALLOONUSERCLICK   WM_USER+5
 
 //Vista shutdown stuff missing in MinGW
-HINSTANCE user32=NULL;
-BOOL WINAPI (*ShutdownBlockReasonCreate)(HWND, LPCWSTR)=NULL;
-BOOL WINAPI (*ShutdownBlockReasonDestroy)(HWND)=NULL;
+HINSTANCE user32 = NULL;
+BOOL WINAPI (*ShutdownBlockReasonCreate)(HWND,LPCWSTR) = NULL;
+BOOL WINAPI (*ShutdownBlockReasonDestroy)(HWND) = NULL;
 
 //Localization
 struct strings {
@@ -74,138 +73,35 @@ struct strings {
 	wchar_t *about;
 };
 #include "localization/strings.h"
-struct strings *l10n=&en_US;
+struct strings *l10n = &en_US;
 
 //Boring stuff
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
 HICON icon[2];
 NOTIFYICONDATA traydata;
-UINT WM_TASKBARCREATED=0;
-UINT WM_UPDATESETTINGS=0;
-UINT WM_ADDTRAY=0;
-UINT WM_HIDETRAY=0;
-int tray_added=0;
-int hide=0;
-int update=0;
+UINT WM_TASKBARCREATED = 0;
+UINT WM_UPDATESETTINGS = 0;
+UINT WM_ADDTRAY = 0;
+UINT WM_HIDETRAY = 0;
+int tray_added = 0;
+int hide = 0;
 struct {
 	wchar_t *Prevent;
 	int Silent;
 	wchar_t *HelpUrl;
 	int PatchApps;
 	int CheckForUpdate;
-} settings={NULL,0,NULL,0,0};
+} settings = {NULL,0,NULL,0,0};
 wchar_t txt[1000];
 
 //Cool stuff
-UINT WM_SHUTDOWNBLOCKED=0;
-int enabled=1;
-int vista=0;
+UINT WM_SHUTDOWNBLOCKED = 0;
+int enabled = 1;
+int vista = 0;
 
-//Error message handling
-int showerror=1;
-
-LRESULT CALLBACK ErrorMsgProc(INT nCode, WPARAM wParam, LPARAM lParam) {
-	if (nCode == HCBT_ACTIVATE) {
-		//Edit the caption of the buttons
-		SetDlgItemText((HWND)wParam, IDYES, L"Copy error");
-		SetDlgItemText((HWND)wParam, IDNO,  L"OK");
-	}
-	return 0;
-}
-
-void Error(wchar_t *func, wchar_t *info, int errorcode, int line) {
-	if (showerror) {
-		//Format message
-		wchar_t errormsg[100];
-		FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM,NULL,errorcode,0,errormsg,sizeof(errormsg)/sizeof(wchar_t),NULL);
-		errormsg[wcslen(errormsg)-2]='\0'; //Remove that damn newline at the end of the formatted error message
-		swprintf(txt,L"%s failed in file %s, line %d.\nError: %s (%d)\n\n%s", func, TEXT(__FILE__), line, errormsg, errorcode, info);
-		//Display message
-		HHOOK hhk=SetWindowsHookEx(WH_CBT, &ErrorMsgProc, 0, GetCurrentThreadId());
-		int response=MessageBox(NULL, txt, APP_NAME" Error", MB_ICONERROR|MB_YESNO|MB_DEFBUTTON2);
-		UnhookWindowsHookEx(hhk);
-		if (response == IDYES) {
-			//Copy message to clipboard
-			OpenClipboard(NULL);
-			EmptyClipboard();
-			wchar_t *data=LocalAlloc(LMEM_FIXED,(wcslen(txt)+1)*sizeof(wchar_t));
-			memcpy(data,txt,(wcslen(txt)+1)*sizeof(wchar_t));
-			SetClipboardData(CF_UNICODETEXT,data);
-			CloseClipboard();
-		}
-	}
-}
-
-//Check for update
-DWORD WINAPI _CheckForUpdate() {
-	//Check if we are connected to the internet
-	DWORD flags; //Not used
-	int tries=0; //Try at least ten times, sleep one second between each attempt
-	while (InternetGetConnectedState(&flags,0) == FALSE) {
-		tries++;
-		Sleep(1000);
-		if (tries >= 10) {
-			#ifdef DEBUG
-			Error(L"InternetGetConnectedState()",L"No internet connection.\nPlease check for update manually at "APP_URL,GetLastError(),__LINE__);
-			#endif
-			return;
-		}
-	}
-	
-	//Open connection
-	HINTERNET http, file;
-	if ((http=InternetOpen(APP_NAME" - "APP_VERSION,INTERNET_OPEN_TYPE_DIRECT,NULL,NULL,0)) == NULL) {
-		#ifdef DEBUG
-		Error(L"InternetOpen()",L"Could not establish connection.\nPlease check for update manually at "APP_URL,GetLastError(),__LINE__);
-		#endif
-		return;
-	}
-	if ((file=InternetOpenUrl(http,APP_UPDATEURL,NULL,0,INTERNET_FLAG_NO_AUTH|INTERNET_FLAG_NO_AUTO_REDIRECT|INTERNET_FLAG_NO_CACHE_WRITE|INTERNET_FLAG_NO_COOKIES|INTERNET_FLAG_NO_UI,0)) == NULL) {
-		#ifdef DEBUG
-		Error(L"InternetOpenUrl()",L"Could not establish connection.\nPlease check for update manually at "APP_URL,GetLastError(),__LINE__);
-		#endif
-		return;
-	}
-	//Read file
-	char data[20];
-	DWORD numread;
-	if (InternetReadFile(file,data,sizeof(data),&numread) == FALSE) {
-		#ifdef DEBUG
-		Error(L"InternetReadFile()",L"Could not read file.\nPlease check for update manually at "APP_URL,GetLastError(),__LINE__);
-		#endif
-		return;
-	}
-	data[numread]='\0';
-	//Get error code
-	wchar_t code[4];
-	DWORD len=sizeof(code);
-	HttpQueryInfo(file,HTTP_QUERY_STATUS_CODE,&code,&len,NULL);
-	//Close connection
-	InternetCloseHandle(file);
-	InternetCloseHandle(http);
-	
-	//Make sure the server returned 200
-	if (wcscmp(code,L"200")) {
-		#ifdef DEBUG
-		swprintf(txt,L"Server returned %s error when checking for update.\nPlease check for update manually at "APP_URL,code);
-		MessageBox(NULL, txt, APP_NAME, MB_ICONWARNING|MB_OK);
-		#endif
-		return;
-	}
-	
-	//New version available?
-	if (strcmp(data,APP_VERSION)) {
-		update=1;
-		wcsncpy(traydata.szInfo,l10n->update_balloon,sizeof(traydata.szInfo)/sizeof(wchar_t));
-		traydata.uFlags|=NIF_INFO;
-		UpdateTray();
-		traydata.uFlags^=NIF_INFO;
-	}
-}
-
-void CheckForUpdate() {
-	CreateThread(NULL,0,_CheckForUpdate,NULL,0,NULL);
-}
+//Error() and CheckForUpdate()
+#include "include/error.h"
+#include "include/update.h"
 
 //Entry point
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow) {
@@ -215,73 +111,74 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	}
 	
 	//Register messages
-	WM_UPDATESETTINGS=RegisterWindowMessage(L"UpdateSettings");
-	WM_ADDTRAY=RegisterWindowMessage(L"AddTray");
-	WM_HIDETRAY=RegisterWindowMessage(L"HideTray");
-	WM_SHUTDOWNBLOCKED=RegisterWindowMessage(L"ShutdownBlocked");
+	WM_UPDATESETTINGS = RegisterWindowMessage(L"UpdateSettings");
+	WM_ADDTRAY = RegisterWindowMessage(L"AddTray");
+	WM_HIDETRAY = RegisterWindowMessage(L"HideTray");
+	WM_SHUTDOWNBLOCKED = RegisterWindowMessage(L"ShutdownBlocked");
 	
 	//Look for previous instance
-	HWND previnst;
-	if ((previnst=FindWindow(APP_NAME,NULL)) != NULL) {
-		PostMessage(previnst,WM_UPDATESETTINGS,0,0);
+	HWND previnst = FindWindow(APP_NAME,NULL);
+	if (previnst != NULL) {
+		PostMessage(previnst, WM_UPDATESETTINGS, 0, 0);
 		if (hide) {
-			PostMessage(previnst,WM_HIDETRAY,0,0);
+			PostMessage(previnst, WM_HIDETRAY, 0, 0);
 		}
 		else {
-			PostMessage(previnst,WM_ADDTRAY,0,0);
+			PostMessage(previnst, WM_ADDTRAY, 0, 0);
 		}
 		return 0;
 	}
 	
 	//Load settings
 	wchar_t path[MAX_PATH];
-	GetModuleFileName(NULL,path,sizeof(path)/sizeof(wchar_t));
-	PathRenameExtension(path,L".ini");
+	GetModuleFileName(NULL, path, sizeof(path)/sizeof(wchar_t));
+	PathRenameExtension(path, L".ini");
 	//Language
-	GetPrivateProfileString(APP_NAME,L"Language",L"en-US",txt,sizeof(txt)/sizeof(wchar_t),path);
+	GetPrivateProfileString(APP_NAME, L"Language", L"en-US", txt, sizeof(txt)/sizeof(wchar_t), path);
 	int i;
 	for (i=0; i < num_languages; i++) {
 		if (!wcscmp(txt,languages[i].code)) {
-			l10n=languages[i].strings;
+			l10n = languages[i].strings;
+			break;
 		}
 	}
 	//Prevent
-	settings.Prevent=l10n->prevent;
-	GetPrivateProfileString(APP_NAME,L"Prevent",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+	settings.Prevent = l10n->prevent;
+	GetPrivateProfileString(APP_NAME, L"Prevent", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
 	if (wcslen(txt) != 0) {
-		settings.Prevent=malloc((wcslen(txt)+1)*sizeof(wchar_t));
-		wcscpy(settings.Prevent,txt);
+		settings.Prevent = malloc((wcslen(txt)+1)*sizeof(wchar_t));
+		wcscpy(settings.Prevent, txt);
 	}
 	//Silent
-	GetPrivateProfileString(APP_NAME,L"Silent",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
-	swscanf(txt,L"%d",&settings.Silent);
+	GetPrivateProfileString(APP_NAME, L"Silent", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
+	swscanf(txt, L"%d", &settings.Silent);
 	//HelpUrl
-	GetPrivateProfileString(APP_NAME,L"HelpUrl",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+	GetPrivateProfileString(APP_NAME, L"HelpUrl", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
 	if (wcslen(txt) != 0 && (!wcsncmp(txt,L"http://",7) || !wcsncmp(txt,L"https://",8))) {
-		settings.HelpUrl=malloc((wcslen(txt)+1)*sizeof(wchar_t));
-		wcscpy(settings.HelpUrl,txt);
+		settings.HelpUrl = malloc((wcslen(txt)+1)*sizeof(wchar_t));
+		wcscpy(settings.HelpUrl, txt);
 	}
 	//PatchApps
-	GetPrivateProfileString(APP_NAME,L"PatchApps",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
-	swscanf(txt,L"%d",&settings.PatchApps);
+	GetPrivateProfileString(APP_NAME, L"PatchApps", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
+	swscanf(txt, L"%d", &settings.PatchApps);
 	//Update
-	GetPrivateProfileString(L"Update",L"CheckForUpdate",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
-	swscanf(txt,L"%d",&settings.CheckForUpdate);
+	GetPrivateProfileString(L"Update", L"CheckForUpdate", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
+	swscanf(txt, L"%d", &settings.CheckForUpdate);
 	
 	//Create window class
 	WNDCLASSEX wnd;
-	wnd.cbSize=sizeof(WNDCLASSEX);
-	wnd.style=0;
-	wnd.lpfnWndProc=WindowProc;
-	wnd.cbClsExtra=0;
-	wnd.cbWndExtra=0;
-	wnd.hInstance=hInst;
-	wnd.hIcon=NULL;
-	wnd.hIconSm=NULL;
-	wnd.hCursor=LoadImage(NULL, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTCOLOR|LR_SHARED);
-	wnd.hbrBackground=(HBRUSH)(COLOR_WINDOW+1);
-	wnd.lpszMenuName=NULL;
-	wnd.lpszClassName=APP_NAME;
+	wnd.cbSize = sizeof(WNDCLASSEX);
+	wnd.style = 0;
+	wnd.lpfnWndProc = WindowProc;
+	wnd.cbClsExtra = 0;
+	wnd.cbWndExtra = 0;
+	wnd.hInstance = hInst;
+	wnd.hIcon = NULL;
+	wnd.hIconSm = NULL;
+	wnd.hCursor = LoadImage(NULL,IDC_ARROW,IMAGE_CURSOR,0,0,LR_DEFAULTCOLOR|LR_SHARED);
+	wnd.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
+	wnd.lpszMenuName = NULL;
+	wnd.lpszClassName = APP_NAME;
 	
 	//Register class
 	RegisterClassEx(&wnd);
@@ -298,25 +195,23 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	*/
 	
 	//Load icons
-	if ((icon[0] = LoadImage(hInst, L"tray-disabled", IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR)) == NULL) {
-		Error(L"LoadImage('tray-disabled')",L"",GetLastError(),__LINE__);
-		PostQuitMessage(1);
-	}
-	if ((icon[1] = LoadImage(hInst, L"tray-enabled", IMAGE_ICON, 0, 0, LR_DEFAULTCOLOR)) == NULL) {
-		Error(L"LoadImage('tray-enabled')",L"",GetLastError(),__LINE__);
+	icon[0] = LoadImage(hInst,L"tray-disabled",IMAGE_ICON,0,0,LR_DEFAULTCOLOR);
+	icon[1] = LoadImage(hInst,L"tray-enabled",IMAGE_ICON,0,0,LR_DEFAULTCOLOR);
+	if (icon[0] == NULL || icon[1] == NULL) {
+		Error(L"LoadImage('tray-*')", L"Fatal error.", GetLastError(), __LINE__);
 		PostQuitMessage(1);
 	}
 	
 	//Create icondata
-	traydata.cbSize=sizeof(NOTIFYICONDATA);
-	traydata.uID=0;
-	traydata.uFlags=NIF_MESSAGE|NIF_ICON|NIF_TIP;
-	traydata.hWnd=hwnd;
-	traydata.uCallbackMessage=WM_ICONTRAY;
+	traydata.cbSize = sizeof(NOTIFYICONDATA);
+	traydata.uID = 0;
+	traydata.uFlags = NIF_MESSAGE|NIF_ICON|NIF_TIP;
+	traydata.hWnd = hwnd;
+	traydata.uCallbackMessage = WM_ICONTRAY;
 	//Balloon tooltip
-	traydata.uTimeout=10000;
-	wcsncpy(traydata.szInfoTitle,APP_NAME,sizeof(traydata.szInfoTitle)/sizeof(wchar_t));
-	traydata.dwInfoFlags=NIIF_USER;
+	traydata.uTimeout = 10000;
+	wcsncpy(traydata.szInfoTitle, APP_NAME, sizeof(traydata.szInfoTitle)/sizeof(wchar_t));
+	traydata.dwInfoFlags = NIIF_USER;
 	
 	//Register TaskbarCreated so we can re-add the tray icon if explorer.exe crashes
 	WM_TASKBARCREATED=RegisterWindowMessage(L"TaskbarCreated");
@@ -325,33 +220,36 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	UpdateTray();
 	
 	//Associate icon to hwnd to make it appear in the Vista shutdown dialog
-	SendMessage(hwnd,WM_SETICON,ICON_BIG,(LPARAM)icon[1]);
+	SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)icon[1]);
 	
 	//Check if we are in Vista and load vista-specific shutdown functions if we are
 	OSVERSIONINFO vi;
-	vi.dwOSVersionInfoSize=sizeof(OSVERSIONINFO);
+	vi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
 	GetVersionEx(&vi);
 	if (vi.dwMajorVersion >= 6) {
 		//Load user32.dll
-		if ((user32=LoadLibrary(L"user32.dll")) == NULL) {
-			Error(L"LoadLibrary('user32.dll')",L"This really shouldn't have happened.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
+		user32 = LoadLibrary(L"user32.dll");
+		if (user32 == NULL) {
+			Error(L"LoadLibrary('user32.dll')", L"This really shouldn't have happened.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), __LINE__);
 		}
 		else {
 			//Get address to ShutdownBlockReasonCreate
-			if ((ShutdownBlockReasonCreate=GetProcAddress(user32,"ShutdownBlockReasonCreate")) == NULL) {
-				Error(L"GetProcAddress('ShutdownBlockReasonCreate')",L"Failed to load Vista specific function.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
+			ShutdownBlockReasonCreate = GetProcAddress(user32,"ShutdownBlockReasonCreate");
+			if (ShutdownBlockReasonCreate == NULL) {
+				Error(L"GetProcAddress('ShutdownBlockReasonCreate')", L"Failed to load Vista specific function.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), __LINE__);
 			}
 			//ShutdownBlockReasonDestroy
-			if ((ShutdownBlockReasonDestroy=GetProcAddress(user32,"ShutdownBlockReasonDestroy")) == NULL) {
-				Error(L"GetProcAddress('ShutdownBlockReasonDestroy')",L"Failed to load Vista specific function.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.",GetLastError(),__LINE__);
+			ShutdownBlockReasonDestroy = GetProcAddress(user32,"ShutdownBlockReasonDestroy");
+			if (ShutdownBlockReasonDestroy == NULL) {
+				Error(L"GetProcAddress('ShutdownBlockReasonDestroy')", L"Failed to load Vista specific function.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), __LINE__);
 			}
-			vista=1;
+			vista = 1;
 		}
 	}
 	
 	//Make Windows query this program first
 	if (SetProcessShutdownParameters(0x4FF,0) == 0) {
-		Error(L"SetProcessShutdownParameters(0x4FF)",L"This means that programs started before "APP_NAME" will probably be closed before the shutdown can be stopped.",GetLastError(),__LINE__);
+		Error(L"SetProcessShutdownParameters(0x4FF)", L"This means that programs started before "APP_NAME" will probably be closed before the shutdown can be stopped.", GetLastError(), __LINE__);
 	}
 	
 	//Check for update
@@ -366,7 +264,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	
 	//Message loop
 	MSG msg;
-	while (GetMessage(&msg, NULL, 0, 0)) {
+	while (GetMessage(&msg,NULL,0,0)) {
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
@@ -376,44 +274,44 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 int PatchApps() {
 	//Get path to patch.dll
 	char path[MAX_PATH];
-	GetModuleFileNameA(NULL,path,sizeof(path));
+	GetModuleFileNameA(NULL, path, sizeof(path));
 	PathRemoveFileSpecA(path);
-	strcat(path,"\\patch.dll");
+	strcat(path, "\\patch.dll");
 	
 	//Get SeDebugPrivilege so we can access all processes
-	int SeDebugPrivilege=0;
+	int SeDebugPrivilege = 0;
 	//Get process token
 	HANDLE hToken;
 	TOKEN_PRIVILEGES tkp;
 	if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,&hToken) == 0) {
 		#ifdef DEBUG
-		Error(L"OpenProcessToken()",L"PatchApps()",GetLastError(),__LINE__);
+		Error(L"OpenProcessToken()", L"PatchApps()", GetLastError(), __LINE__);
 		#endif
 	}
 	else {
 		//Get LUID for SeDebugPrivilege
 		LookupPrivilegeValue(NULL, SE_DEBUG_NAME, &tkp.Privileges[0].Luid);
-		tkp.PrivilegeCount=1;
-		tkp.Privileges[0].Attributes=SE_PRIVILEGE_ENABLED;
+		tkp.PrivilegeCount = 1;
+		tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 		
 		//Enable SeDebugPrivilege
-		AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0); 
-		if (GetLastError() != ERROR_SUCCESS) {
+		if (AdjustTokenPrivileges(hToken,FALSE,&tkp,0,NULL,0) == 0 || GetLastError() != ERROR_SUCCESS) {
 			#ifdef DEBUG
-			Error(L"AdjustTokenPrivileges()",L"PatchApps()",GetLastError(),__LINE__);
+			Error(L"AdjustTokenPrivileges()", L"PatchApps()", GetLastError(), __LINE__);
 			#endif
 		}
 		else {
 			//Got it
-			SeDebugPrivilege=1;
+			SeDebugPrivilege = 1;
 		}
 	}
 	
 	//Get address to LoadLibrary
-	HMODULE kernel32=GetModuleHandle(L"kernel32.dll");
-	HMODULE WINAPI (*pfnLoadLibrary)(LPCTSTR)=NULL;
-	if ((pfnLoadLibrary=(PVOID)GetProcAddress(kernel32,"LoadLibraryA")) == NULL) {
-		Error(L"GetProcAddress('LoadLibraryA')",L"Failed to load LoadLibrary().",GetLastError(),__LINE__);
+	HMODULE kernel32 = GetModuleHandle(L"kernel32.dll");
+	HMODULE WINAPI (*pfnLoadLibrary)(LPCTSTR) = NULL;
+	pfnLoadLibrary = (PVOID)GetProcAddress(kernel32,"LoadLibraryA");
+	if (pfnLoadLibrary == NULL) {
+		Error(L"GetProcAddress('LoadLibraryA')", L"Failed to load LoadLibrary().", GetLastError(), __LINE__);
 		return;
 	}
 	
@@ -423,21 +321,22 @@ int PatchApps() {
 	*/
 	
 	//Load QueryFullProcessImageName
-	BOOL WINAPI (*QueryFullProcessImageName)(HANDLE, DWORD, LPTSTR, PDWORD)=NULL;
-	if ((QueryFullProcessImageName=GetProcAddress(kernel32,"QueryFullProcessImageNameW")) == NULL) {
-		Error(L"GetProcAddress('QueryFullProcessImageName')",L"Failed to load QueryFullProcessImageName().",GetLastError(),__LINE__);
+	BOOL WINAPI (*QueryFullProcessImageName)(HANDLE, DWORD, LPTSTR, PDWORD) = NULL;
+	QueryFullProcessImageName = GetProcAddress(kernel32,"QueryFullProcessImageNameW");
+	if (QueryFullProcessImageName == NULL) {
+		Error(L"GetProcAddress('QueryFullProcessImageName')", L"Failed to load QueryFullProcessImageName().", GetLastError(), __LINE__);
 		return;
 	}
 	
 	//Enumerate processes
 	DWORD pids[1024], cbNeeded;
-	if (EnumProcesses(pids, sizeof(pids), &cbNeeded) == 0) {
-		Error(L"EnumProcesses()",L"Could not enumerate processes. PatchApps failed.",GetLastError(),__LINE__);
+	if (EnumProcesses(pids,sizeof(pids),&cbNeeded) == 0) {
+		Error(L"EnumProcesses()", L"Could not enumerate processes. PatchApps() failed.", GetLastError(), __LINE__);
 		return;
 	}
 	
 	//Loop pids
-	int num=cbNeeded/sizeof(DWORD);
+	int num = cbNeeded/sizeof(DWORD);
 	int i;
 	for (i=0; i < num; i++) {
 		if (pids[i] == 0) {
@@ -448,57 +347,58 @@ int PatchApps() {
 		process=OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pids[i]);
 		if (process == NULL) {
 			wchar_t txt2[MAX_PATH];
-			wsprintf(txt2,L"Could not open process.\npid: %d",pids[i]);
-			Error(L"OpenProcess(PROCESS_QUERY_INFORMATION)",txt2,GetLastError(),__LINE__);
+			wsprintf(txt2, L"Could not open process.\npid: %d", pids[i]);
+			Error(L"OpenProcess(PROCESS_QUERY_INFORMATION)", txt2, GetLastError(), __LINE__);
 			continue;
 		}
-		DWORD len=MAX_PATH;
-		if (QueryFullProcessImageName(process, 0, txt, &len) == 0) {
-			Error(L"QueryFullProcessImageName()",L"Could not get path of process.",GetLastError(),__LINE__);
+		DWORD len = MAX_PATH;
+		if (QueryFullProcessImageName(process,0,txt,&len) == 0) {
+			Error(L"QueryFullProcessImageName()", L"Could not get path of process.", GetLastError(), __LINE__);
 		}
 		CloseHandle(process);
 		
-		//Open process - PROCESS_ALL_ACCESS
-		//process=OpenProcess(PROCESS_ALL_ACCESS, TRUE, pids[i]);
-		process=OpenProcess(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ, TRUE, pids[i]);
-		if (process == NULL) {
-			wchar_t txt2[100];
-			wsprintf(txt2,L"Could not open process.\npid: %d",pids[i]);
-			Error(L"OpenProcess()",txt2 /*L"Could not open process."*/,GetLastError(),__LINE__);
-			continue;
-		}
-		int response=MessageBox(NULL, txt, APP_NAME, MB_ICONQUESTION|MB_YESNO);
+		int response = MessageBox(NULL,txt,APP_NAME,MB_ICONQUESTION|MB_YESNO);
 		if (response == IDYES) {
-			//Write dll path to process memory
-			PVOID memory=VirtualAllocEx(process, NULL, strlen(path)+1, MEM_COMMIT, PAGE_READWRITE);
-			if (memory == NULL) {
-				Error(L"VirtualAllocEx()",L"Could not allocate memory in process.",GetLastError(),__LINE__);
-				CloseHandle(process);
+			//Open process
+			//process = OpenProcess(PROCESS_ALL_ACCESS,TRUE,pids[i]);
+			process = OpenProcess(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ,TRUE,pids[i]);
+			if (process == NULL) {
+				wchar_t txt2[100];
+				wsprintf(txt2, L"Could not open process.\npid: %d", pids[i]);
+				Error(L"OpenProcess()", txt2 /*L"Could not open process."*/, GetLastError(), __LINE__);
 				continue;
 			}
 			
-			if (WriteProcessMemory(process, memory, path, strlen(path)+1, NULL) == 0) {
-				Error(L"WriteProcessMemory()",L"Could not write memory to process.",GetLastError(),__LINE__);
+			//Write dll path to process memory
+			PVOID memory = VirtualAllocEx(process,NULL,strlen(path)+1,MEM_COMMIT,PAGE_READWRITE);
+			if (memory == NULL) {
+				Error(L"VirtualAllocEx()", L"Could not allocate memory in process.", GetLastError(), __LINE__);
+				CloseHandle(process);
+				continue;
+			}
+			if (WriteProcessMemory(process,memory,path,strlen(path)+1,NULL) == 0) {
+				Error(L"WriteProcessMemory()", L"Could not write memory to process.", GetLastError(), __LINE__);
 				CloseHandle(process);
 				continue;
 			}
 			
 			//Inject dll
-			if (CreateRemoteThread(process, NULL, 0, (LPTHREAD_START_ROUTINE)pfnLoadLibrary, memory, 0, NULL) == NULL) {
-				Error(L"CreateRemoteThread()",L"Could not create remote thread.",GetLastError(),__LINE__);
+			if (CreateRemoteThread(process,NULL,0,(LPTHREAD_START_ROUTINE)pfnLoadLibrary,memory,0,NULL) == NULL) {
+				Error(L"CreateRemoteThread()", L"Could not create remote thread.", GetLastError(), __LINE__);
 				CloseHandle(process);
 			}
 			
 			//Free memory
 			//VirtualFreeEx(process, memory, strlen(path)+1, MEM_RELEASE);
+			
+			//Close process
+			CloseHandle(process);
 		}
-		//Close process
-		CloseHandle(process);
 	}
 	
 	//Disable SeDebugPrivilege
 	if (SeDebugPrivilege) {
-		tkp.Privileges[0].Attributes=0;
+		tkp.Privileges[0].Attributes = 0;
 		AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0);
 	}
 }
@@ -506,7 +406,7 @@ int PatchApps() {
 void ShowContextMenu(HWND hwnd) {
 	POINT pt;
 	GetCursorPos(&pt);
-	HMENU hMenu=CreatePopupMenu();
+	HMENU hMenu = CreatePopupMenu();
 	
 	//Toggle
 	InsertMenu(hMenu, -1, MF_BYPOSITION, SWM_TOGGLE, (enabled?l10n->menu_disable:l10n->menu_enable));
@@ -516,33 +416,29 @@ void ShowContextMenu(HWND hwnd) {
 	
 	//Check autostart
 	int autostart_enabled=0, autostart_hide=0;
-	//Open key
+	//Registry
 	HKEY key;
-	RegOpenKeyEx(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,KEY_QUERY_VALUE,&key);
-	//Read value
 	wchar_t autostart_value[MAX_PATH+10];
-	DWORD len=sizeof(autostart_value);
-	RegQueryValueEx(key,APP_NAME,NULL,NULL,(LPBYTE)autostart_value,&len);
-	//Close key
+	DWORD len = sizeof(autostart_value);
+	RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_QUERY_VALUE, &key);
+	RegQueryValueEx(key, APP_NAME, NULL, NULL, (LPBYTE)autostart_value, &len);
 	RegCloseKey(key);
-	//Get path
-	wchar_t path[MAX_PATH];
-	GetModuleFileName(NULL,path,MAX_PATH);
 	//Compare
-	wchar_t pathcmp[MAX_PATH+10];
-	swprintf(pathcmp,L"\"%s\"",path);
-	if (!wcscmp(pathcmp,autostart_value)) {
-		autostart_enabled=1;
+	wchar_t path[MAX_PATH];
+	GetModuleFileName(NULL, path, MAX_PATH);
+	swprintf(txt, L"\"%s\"", path);
+	if (!wcscmp(txt,autostart_value)) {
+		autostart_enabled = 1;
 	}
 	else {
-		swprintf(pathcmp,L"\"%s\" -hide",path);
-		if (!wcscmp(pathcmp,autostart_value)) {
-			autostart_enabled=1;
-			autostart_hide=1;
+		swprintf(txt, L"\"%s\" -hide", path);
+		if (!wcscmp(txt,autostart_value)) {
+			autostart_enabled = 1;
+			autostart_hide = 1;
 		}
 	}
 	//Autostart
-	HMENU hAutostartMenu=CreatePopupMenu();
+	HMENU hAutostartMenu = CreatePopupMenu();
 	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_enabled?MF_CHECKED:0), (autostart_enabled?SWM_AUTOSTART_OFF:SWM_AUTOSTART_ON), l10n->menu_autostart);
 	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_hide?MF_CHECKED:0), (autostart_hide?SWM_AUTOSTART_HIDE_OFF:SWM_AUTOSTART_HIDE_ON), l10n->menu_hide);
 	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_POPUP, (UINT)hAutostartMenu, l10n->menu_autostart);
@@ -571,23 +467,23 @@ void ShowContextMenu(HWND hwnd) {
 }
 
 int UpdateTray() {
-	wcsncpy(traydata.szTip,(enabled?l10n->tray_enabled:l10n->tray_disabled),sizeof(traydata.szTip)/sizeof(wchar_t));
-	traydata.hIcon=icon[enabled];
+	wcsncpy(traydata.szTip, (enabled?l10n->tray_enabled:l10n->tray_disabled), sizeof(traydata.szTip)/sizeof(wchar_t));
+	traydata.hIcon = icon[enabled];
 	
 	//Only add or modify if not hidden or if balloon will be displayed
 	if (!hide || traydata.uFlags&NIF_INFO) {
-		int tries=0; //Try at least ten times, sleep 100 ms between each attempt
+		int tries = 0; //Try at least ten times, sleep 100 ms between each attempt
 		while (Shell_NotifyIcon((tray_added?NIM_MODIFY:NIM_ADD),&traydata) == FALSE) {
 			tries++;
 			if (tries >= 10) {
-				Error(L"Shell_NotifyIcon(NIM_ADD/NIM_MODIFY)",L"Failed to update tray icon.",GetLastError(),__LINE__);
+				Error(L"Shell_NotifyIcon(NIM_ADD/NIM_MODIFY)", L"Failed to update tray icon.", GetLastError(), __LINE__);
 				return 1;
 			}
 			Sleep(100);
 		}
 		
 		//Success
-		tray_added=1;
+		tray_added = 1;
 	}
 	return 0;
 }
@@ -599,42 +495,44 @@ int RemoveTray() {
 	}
 	
 	if (Shell_NotifyIcon(NIM_DELETE,&traydata) == FALSE) {
-		Error(L"Shell_NotifyIcon(NIM_DELETE)",L"Failed to remove tray icon.",GetLastError(),__LINE__);
+		Error(L"Shell_NotifyIcon(NIM_DELETE)", L"Failed to remove tray icon.", GetLastError(), __LINE__);
 		return 1;
 	}
 	
 	//Success
-	tray_added=0;
+	tray_added = 0;
 	return 0;
 }
 
 void SetAutostart(int on, int hide) {
 	//Open key
 	HKEY key;
-	int error;
-	if ((error=RegOpenKeyEx(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,KEY_SET_VALUE,&key)) != ERROR_SUCCESS) {
-		Error(L"RegOpenKeyEx(HKEY_CURRENT_USER,'Software\\Microsoft\\Windows\\CurrentVersion\\Run')",L"Error opening the registry.",error,__LINE__);
+	int error = RegOpenKeyEx(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,KEY_SET_VALUE,&key);
+	if (error != ERROR_SUCCESS) {
+		Error(L"RegOpenKeyEx(HKEY_CURRENT_USER,'Software\\Microsoft\\Windows\\CurrentVersion\\Run')", L"Error opening the registry.", error, __LINE__);
 		return;
 	}
 	if (on) {
 		//Get path
 		wchar_t path[MAX_PATH];
 		if (GetModuleFileName(NULL,path,MAX_PATH) == 0) {
-			Error(L"GetModuleFileName(NULL)",L"",GetLastError(),__LINE__);
+			Error(L"GetModuleFileName(NULL)", L"SetAutostart()", GetLastError(), __LINE__);
 			return;
 		}
 		//Add
 		wchar_t value[MAX_PATH+10];
-		swprintf(value,(hide?L"\"%s\" -hide":L"\"%s\""),path);
-		if ((error=RegSetValueEx(key,APP_NAME,0,REG_SZ,(LPBYTE)value,(wcslen(value)+1)*sizeof(wchar_t))) != ERROR_SUCCESS) {
-			Error(L"RegSetValueEx('"APP_NAME"')",L"",error,__LINE__);
+		swprintf(value, (hide?L"\"%s\" -hide":L"\"%s\""), path);
+		error = RegSetValueEx(key,APP_NAME,0,REG_SZ,(LPBYTE)value,(wcslen(value)+1)*sizeof(wchar_t));
+		if (error != ERROR_SUCCESS) {
+			Error(L"RegSetValueEx('"APP_NAME"')", L"SetAutostart()", error, __LINE__);
 			return;
 		}
 	}
 	else {
 		//Remove
-		if ((error=RegDeleteValue(key,APP_NAME)) != ERROR_SUCCESS) {
-			Error(L"RegDeleteValue('"APP_NAME"')",L"",error,__LINE__);
+		error = RegDeleteValue(key,APP_NAME);
+		if (error != ERROR_SUCCESS) {
+			Error(L"RegDeleteValue('"APP_NAME"')", L"SetAutostart()", error, __LINE__);
 			return;
 		}
 	}
@@ -643,61 +541,61 @@ void SetAutostart(int on, int hide) {
 }
 
 void ToggleState() {
-	enabled=!enabled;
+	enabled = !enabled;
 	UpdateTray();
 	if (enabled) {
-		SendMessage(traydata.hWnd,WM_UPDATESETTINGS,0,0);
+		SendMessage(traydata.hWnd, WM_UPDATESETTINGS, 0, 0);
 	}
 }
 
 LRESULT CALLBACK ShutdownDialogProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 	if (nCode == HCBT_ACTIVATE) {
 		//Edit the caption of the buttons
-		SetDlgItemText((HWND)wParam,IDYES,l10n->shutdown_logoff);
-		SetDlgItemText((HWND)wParam,IDNO,l10n->shutdown_shutdown);
-		SetDlgItemText((HWND)wParam,IDCANCEL,l10n->shutdown_nothing);
+		SetDlgItemText((HWND)wParam, IDYES, l10n->shutdown_logoff);
+		SetDlgItemText((HWND)wParam, IDNO, l10n->shutdown_shutdown);
+		SetDlgItemText((HWND)wParam, IDCANCEL, l10n->shutdown_nothing);
 	}
 	return 0;
 }
 
 void AskShutdown() {
 	//ShowWindow(traydata.hWnd, SW_SHOW);
-	HHOOK hhk=SetWindowsHookEx(WH_CBT, &ShutdownDialogProc, 0, GetCurrentThreadId());
-	int response=MessageBox(traydata.hWnd, l10n->shutdown_ask, APP_NAME, MB_ICONQUESTION|MB_YESNOCANCEL|(settings.HelpUrl!=NULL?MB_HELP:0)|MB_DEFBUTTON2|MB_SYSTEMMODAL);
+	HHOOK hhk = SetWindowsHookEx(WH_CBT, &ShutdownDialogProc, 0, GetCurrentThreadId());
+	int response = MessageBox(traydata.hWnd,l10n->shutdown_ask,APP_NAME,MB_ICONQUESTION|MB_YESNOCANCEL|(settings.HelpUrl!=NULL?MB_HELP:0)|MB_DEFBUTTON2|MB_SYSTEMMODAL);
 	UnhookWindowsHookEx(hhk);
 	if (response == IDYES || response == IDNO) {
-		enabled=0;
-		hide=0;
+		enabled = 0;
+		hide = 0;
 		UpdateTray();
 		if (response == IDYES) {
-			ExitWindowsEx(EWX_LOGOFF,0);
+			ExitWindowsEx(EWX_LOGOFF, 0);
 		}
 		else {
 			//Get process token
 			HANDLE hToken;
 			if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,&hToken) == 0) {
-				Error(L"OpenProcessToken()",L"Could not get privilege to shutdown computer. Try shutting down manually.",GetLastError(),__LINE__);
+				Error(L"OpenProcessToken()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), __LINE__);
 				return;
 			}
 			
 			//Get LUID for SeShutdownPrivilege
 			TOKEN_PRIVILEGES tkp;
 			LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid);
-			tkp.PrivilegeCount=1;
-			tkp.Privileges[0].Attributes=SE_PRIVILEGE_ENABLED;
+			tkp.PrivilegeCount = 1;
+			tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
 			
 			//Enable SeShutdownPrivilege
 			AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0); 
 			if (GetLastError() != ERROR_SUCCESS) {
-				Error(L"AdjustTokenPrivileges()",L"Could not get privilege to shutdown computer. Try shutting down manually.",GetLastError(),__LINE__);
+				Error(L"AdjustTokenPrivileges()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), __LINE__);
 				return;
 			}
 			
 			//Do it!!
-			ExitWindowsEx(EWX_SHUTDOWN,0);
+			ExitWindowsEx(EWX_SHUTDOWN, 0);
 
 			//Disable SeShutdownPrivilege
-			tkp.Privileges[0].Attributes=0;
+			tkp.Privileges[0].Attributes = 0;
 			AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0);
 		}
 		
@@ -722,8 +620,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		}
 		else if (lParam == NIN_BALLOONUSERCLICK) {
 			if (!wcscmp(traydata.szInfo,l10n->update_balloon)) {
-				hide=0;
-				SendMessage(hwnd,WM_COMMAND,SWM_UPDATE,0);
+				hide = 0;
+				SendMessage(hwnd, WM_COMMAND, SWM_UPDATE, 0);
 			}
 			else {
 				AskShutdown();
@@ -736,60 +634,61 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	else if (msg == WM_UPDATESETTINGS) {
 		//Load settings
 		wchar_t path[MAX_PATH];
-		GetModuleFileName(NULL,path,sizeof(path)/sizeof(wchar_t));
-		PathRenameExtension(path,L".ini");
+		GetModuleFileName(NULL, path, sizeof(path)/sizeof(wchar_t));
+		PathRenameExtension(path, L".ini");
 		//Language
-		GetPrivateProfileString(APP_NAME,L"Language",L"en-US",txt,sizeof(txt)/sizeof(wchar_t),path);
+		GetPrivateProfileString(APP_NAME, L"Language", L"en-US", txt,sizeof(txt)/sizeof(wchar_t), path);
 		int i;
 		for (i=0; i < num_languages; i++) {
 			if (!wcscmp(txt,languages[i].code)) {
-				l10n=languages[i].strings;
+				l10n = languages[i].strings;
+				break;
 			}
 		}
 		//Prevent
 		if (settings.Prevent != l10n->prevent) {
 			free(settings.Prevent);
-			settings.Prevent=l10n->prevent;
+			settings.Prevent = l10n->prevent;
 		}
-		GetPrivateProfileString(APP_NAME,L"Prevent",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+		GetPrivateProfileString(APP_NAME, L"Prevent", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
 		if (wcslen(txt) != 0) {
-			settings.Prevent=malloc((wcslen(txt)+1)*sizeof(wchar_t));
-			wcscpy(settings.Prevent,txt);
+			settings.Prevent = malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.Prevent, txt);
 		}
 		//HelpUrl
 		if (settings.HelpUrl != NULL) {
 			free(settings.HelpUrl);
-			settings.HelpUrl=NULL;
+			settings.HelpUrl = NULL;
 		}
-		GetPrivateProfileString(APP_NAME,L"HelpUrl",L"",txt,sizeof(txt)/sizeof(wchar_t),path);
+		GetPrivateProfileString(APP_NAME, L"HelpUrl", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
 		if (wcslen(txt) != 0 && (!wcsncmp(txt,L"http://",7) || !wcsncmp(txt,L"https://",8))) {
-			settings.HelpUrl=malloc((wcslen(txt)+1)*sizeof(wchar_t));
-			wcscpy(settings.HelpUrl,txt);
+			settings.HelpUrl = malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.HelpUrl, txt);
 		}
 		//Silent
-		GetPrivateProfileString(APP_NAME,L"Silent",L"0",txt,sizeof(txt)/sizeof(wchar_t),path);
-		swscanf(txt,L"%d",&settings.Silent);
+		GetPrivateProfileString(APP_NAME, L"Silent", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
+		swscanf(txt, L"%d", &settings.Silent);
 	}
 	else if (msg == WM_ADDTRAY && (!settings.Silent || GetAsyncKeyState(VK_SHIFT)&0x8000)) {
-		hide=0;
+		hide = 0;
 		UpdateTray();
 	}
 	else if (msg == WM_HIDETRAY) {
-		hide=1;
+		hide = 1;
 		RemoveTray();
 	}
 	else if (msg == WM_TASKBARCREATED) {
-		tray_added=0;
+		tray_added = 0;
 		UpdateTray();
 	}
 	else if (msg == WM_SHUTDOWNBLOCKED) {
 		//Display balloon tip
-		wcsncpy(traydata.szInfo,settings.Prevent,(sizeof(traydata.szInfo))/sizeof(wchar_t));
-		wcscat(traydata.szInfo,L"\n");
-		wcscat(traydata.szInfo,l10n->balloon);
-		traydata.uFlags|=NIF_INFO;
+		wcsncpy(traydata.szInfo, settings.Prevent, (sizeof(traydata.szInfo))/sizeof(wchar_t));
+		wcscat(traydata.szInfo, L"\n");
+		wcscat(traydata.szInfo, l10n->balloon);
+		traydata.uFlags |= NIF_INFO;
 		UpdateTray();
-		traydata.uFlags^=NIF_INFO;
+		traydata.uFlags ^= NIF_INFO;
 	}
 	else if (msg == WM_COMMAND) {
 		int wmId=LOWORD(wParam), wmEvent=HIWORD(wParam);
@@ -797,26 +696,26 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			ToggleState();
 		}
 		else if (wmId == SWM_HIDE) {
-			hide=1;
+			hide = 1;
 			RemoveTray();
 		}
 		else if (wmId == SWM_AUTOSTART_ON) {
-			SetAutostart(1,0);
+			SetAutostart(1, 0);
 		}
 		else if (wmId == SWM_AUTOSTART_OFF) {
-			SetAutostart(0,0);
+			SetAutostart(0, 0);
 		}
 		else if (wmId == SWM_AUTOSTART_HIDE_ON) {
-			SetAutostart(1,1);
+			SetAutostart(1, 1);
 		}
 		else if (wmId == SWM_AUTOSTART_HIDE_OFF) {
-			SetAutostart(1,0);
+			SetAutostart(1, 0);
 		}
 		else if (wmId == SWM_SHUTDOWN) {
 			AskShutdown();
 		}
 		else if (wmId == SWM_UPDATE) {
-			if (MessageBox(NULL, l10n->update_dialog, APP_NAME, MB_ICONINFORMATION|MB_YESNO|MB_SYSTEMMODAL) == IDYES) {
+			if (MessageBox(NULL,l10n->update_dialog,APP_NAME,MB_ICONINFORMATION|MB_YESNO|MB_SYSTEMMODAL) == IDYES) {
 				ShellExecute(NULL, L"open", APP_URL, NULL, NULL, SW_SHOWNORMAL);
 			}
 		}
@@ -828,7 +727,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		}
 	}
 	else if (msg == WM_DESTROY) {
-		showerror=0;
+		showerror = 0;
 		RemoveTray();
 		if (user32) {
 			FreeLibrary(user32);
@@ -840,18 +739,18 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		if (enabled) {
 			//Prevent shutdown
 			if (vista) {
-				ShutdownBlockReasonCreate(hwnd,settings.Prevent);
-				hide=0;
+				ShutdownBlockReasonCreate(hwnd, settings.Prevent);
+				hide = 0;
 				UpdateTray();
 			}
 			else if (!settings.Silent || !hide || GetAsyncKeyState(VK_SHIFT)&0x800) {
 				//Show balloon, in vista it would just be automatically dismissed by the shutdown dialog
-				wcsncpy(traydata.szInfo,settings.Prevent,(sizeof(traydata.szInfo))/sizeof(wchar_t));
-				wcscat(traydata.szInfo,L"\n");
-				wcscat(traydata.szInfo,l10n->balloon);
-				traydata.uFlags|=NIF_INFO;
+				wcsncpy(traydata.szInfo, settings.Prevent, (sizeof(traydata.szInfo))/sizeof(wchar_t));
+				wcscat(traydata.szInfo, L"\n");
+				wcscat(traydata.szInfo, l10n->balloon);
+				traydata.uFlags |= NIF_INFO;
 				UpdateTray();
-				traydata.uFlags^=NIF_INFO;
+				traydata.uFlags ^= NIF_INFO;
 			}
 			return FALSE;
 		}
@@ -866,7 +765,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		ShellExecute(NULL, L"open", settings.HelpUrl, NULL, NULL, SW_SHOWNORMAL);
 	}
 	else if (/*msg == WM_CLOSE ||*/ (msg == WM_KEYDOWN && wParam == VK_ESCAPE)) {
-		ShowWindow(hwnd,SW_HIDE);
+		ShowWindow(hwnd, SW_HIDE);
 		return;
 	}
 	else if (msg == WM_SYSCOMMAND && wParam&0xFFF0 == SC_CLOSE) {

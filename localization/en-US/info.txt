@@ -16,6 +16,8 @@ Send feedback to recover89@gmail.com
 If you feel this program is useful, please consider donating money.
 You can find out how to donate on the website.
 
+ShutdownGuard is open source, licensed under GPL.
+
 Changelog
 ---------
 0.4:

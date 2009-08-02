@@ -6,11 +6,11 @@
 struct {
 	wchar_t *code;
 	struct strings *strings;
-} languages[]={
-	{L"en-US",&en_US},
-	{L"es-ES",&es_ES},
-	{L"lt-LT",&lt_LT},
-	{L"nn-NO",&nn_NO},
+} languages[] = {
+	{L"en-US", &en_US},
+	{L"es-ES", &es_ES},
+	{L"lt-LT", &lt_LT},
+	{L"nn-NO", &nn_NO},
 };
 
-int num_languages=4;
+int num_languages = 4;
