@@ -37,14 +37,13 @@
 #define SWM_ABOUT              WM_APP+9
 #define SWM_EXIT               WM_APP+10
 
-//Balloon stuff missing in MinGW
+//Stuff missing in MinGW
 #define NIIF_USER 4
 #define NIN_BALLOONSHOW        WM_USER+2
 #define NIN_BALLOONHIDE        WM_USER+3
 #define NIN_BALLOONTIMEOUT     WM_USER+4
 #define NIN_BALLOONUSERCLICK   WM_USER+5
-
-//Vista shutdown stuff missing in MinGW
+//Vista shutdown stuff
 HINSTANCE user32 = NULL;
 BOOL WINAPI (*ShutdownBlockReasonCreate)(HWND,LPCWSTR) = NULL;
 BOOL WINAPI (*ShutdownBlockReasonDestroy)(HWND) = NULL;

@@ -32,7 +32,7 @@ wchar_t txt[1000];
 #ifdef DEBUG
 #include "include/error.h"
 #else
-void Error(wchar_t*, wchar_t*, int, int) { }
+#define Error(a,b,c,d)
 #endif
 
 int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodCaller) {
