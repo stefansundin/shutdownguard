@@ -38,6 +38,7 @@
 #define SWM_EXIT               WM_APP+10
 
 //Stuff missing in MinGW
+#define HWND_MESSAGE ((HWND)-3)
 #define NIIF_USER 4
 #define NIN_BALLOONSHOW        WM_USER+2
 #define NIN_BALLOONHIDE        WM_USER+3
@@ -178,20 +179,11 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	wnd.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
 	wnd.lpszMenuName = NULL;
 	wnd.lpszClassName = APP_NAME;
-	
 	//Register class
 	RegisterClassEx(&wnd);
 	
 	//Create window
-	HWND hwnd=CreateWindowEx(0, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW^WS_SIZEBOX^WS_MAXIMIZEBOX^WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 410, 165, NULL, NULL, hInst, NULL);
-	/*
-	CreateWindowEx(0, L"BUTTON", L"Log off", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_PUSHBUTTON, 20, 90, 85, 27, hwnd, NULL, hInst, NULL);
-	CreateWindowEx(0, L"BUTTON", L"Shutdown", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_DEFPUSHBUTTON, 115, 90, 85, 27, hwnd, NULL, hInst, NULL);
-	CreateWindowEx(0, L"BUTTON", L"Reboot", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_PUSHBUTTON, 210, 90, 85, 27, hwnd, NULL, hInst, NULL);
-	CreateWindowEx(0, L"BUTTON", L"Nothing", WS_TABSTOP|WS_VISIBLE|WS_CHILD|BS_PUSHBUTTON, 305, 90, 85, 27, hwnd, NULL, hInst, NULL);
-	CreateWindowEx(0, L"STATIC", L"What do you want to do?", WS_TABSTOP|WS_VISIBLE|WS_CHILD, 95, 46, 200, 25, hwnd, NULL, hInst, NULL);
-	ShowWindow(hwnd,iCmdShow);
-	*/
+	HWND hwnd = CreateWindowEx(0, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, HWND_MESSAGE, NULL, hInst, NULL);
 	
 	//Load icons
 	icon[0] = LoadImage(hInst,L"tray-disabled",IMAGE_ICON,0,0,LR_DEFAULTCOLOR);
@@ -417,7 +409,7 @@ void ShowContextMenu(HWND hwnd) {
 	int autostart_enabled=0, autostart_hide=0;
 	//Registry
 	HKEY key;
-	wchar_t autostart_value[MAX_PATH+10];
+	wchar_t autostart_value[MAX_PATH+10] = L"";
 	DWORD len = sizeof(autostart_value);
 	RegOpenKeyEx(HKEY_CURRENT_USER, L"Software\\Microsoft\\Windows\\CurrentVersion\\Run", 0, KEY_QUERY_VALUE, &key);
 	RegQueryValueEx(key, APP_NAME, NULL, NULL, (LPBYTE)autostart_value, &len);
@@ -547,6 +539,99 @@ void ToggleState() {
 	}
 }
 
+LRESULT CALLBACK DialogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
+
+	if (msg == WM_COMMAND) {
+		int button = LOWORD(wParam);
+		if (button == IDOK || button == IDCLOSE || button == IDRETRY) {
+			enabled = 0;
+			hide = 0;
+			UpdateTray();
+			if (button == IDOK) {
+				ExitWindowsEx(EWX_LOGOFF, 0);
+			}
+			else {
+				//Get process token
+				HANDLE hToken;
+				if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,&hToken) == 0) {
+					Error(L"OpenProcessToken()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), __LINE__);
+					return;
+				}
+				
+				//Get LUID for SeShutdownPrivilege
+				TOKEN_PRIVILEGES tkp;
+				LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid);
+				tkp.PrivilegeCount = 1;
+				tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+				
+				//Enable SeShutdownPrivilege
+				AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0); 
+				if (GetLastError() != ERROR_SUCCESS) {
+					Error(L"AdjustTokenPrivileges()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), __LINE__);
+					return;
+				}
+				
+				//Do it!!
+				ExitWindowsEx(EWX_SHUTDOWN, 0);
+				
+				//Disable SeShutdownPrivilege
+				tkp.Privileges[0].Attributes = 0;
+				AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0);
+			}
+		}
+		else if (button == IDCANCEL) {
+			DestroyWindow(hwnd);
+		}
+	}
+
+	if (msg == WM_CLOSE || (msg == WM_KEYDOWN && wParam == VK_ESCAPE)) {
+		//ShowWindow(hwnd, SW_HIDE);
+		DestroyWindow(hwnd);
+		return 0;
+	}
+	/*else if (msg == WM_SYSCOMMAND && wParam&0xFFF0 == SC_CLOSE) {
+		return 0;
+	}*/
+	return DefWindowProc(hwnd, msg, wParam, lParam);
+}
+
+void AskShutdown() {
+	HINSTANCE hInst = GetModuleHandle(NULL);
+	
+	//Create dialog
+	WNDCLASSEX wnd;
+	wnd.cbSize = sizeof(WNDCLASSEX);
+	wnd.style = 0;
+	wnd.lpfnWndProc = DialogProc;
+	wnd.cbClsExtra = 0;
+	wnd.cbWndExtra = 0;
+	wnd.hInstance = hInst;
+	wnd.hIcon = NULL;
+	wnd.hIconSm = NULL;
+	wnd.hCursor = LoadImage(NULL,IDC_ARROW,IMAGE_CURSOR,0,0,LR_DEFAULTCOLOR|LR_SHARED);
+	wnd.hbrBackground = (HBRUSH)(COLOR_BTNFACE+1);
+	wnd.lpszMenuName = NULL;
+	wnd.lpszClassName = APP_NAME L"-AskShutdown";
+	RegisterClassEx(&wnd);
+	
+	//Create window
+	HWND hwnd = CreateWindowEx(0, wnd.lpszClassName, L"Shutdown", WS_OVERLAPPEDWINDOW^WS_SIZEBOX^WS_MAXIMIZEBOX^WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 410, 165, NULL, NULL, hInst, NULL);
+	HWND text = CreateWindowEx(0, L"STATIC", L"What do you want to do?", WS_TABSTOP|WS_VISIBLE|WS_CHILD, 95, 46, 200, 25, hwnd, NULL, hInst, NULL);
+	HWND logoff = CreateWindowEx(0, L"BUTTON", L"Log off", BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 20, 90, 85, 27, hwnd, (HMENU)IDOK, hInst, NULL);
+	HWND shutdown = CreateWindowEx(0, L"BUTTON", L"Shutdown", BS_DEFPUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 115, 90, 85, 27, hwnd, (HMENU)IDCLOSE, hInst, NULL);
+	HWND reboot = CreateWindowEx(0, L"BUTTON", L"Reboot", BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 210, 90, 85, 27, hwnd, (HMENU)IDRETRY, hInst, NULL);
+	HWND nothing = CreateWindowEx(0, L"BUTTON", L"Nothing", BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 305, 90, 85, 27, hwnd, (HMENU)IDCANCEL, hInst, NULL);
+	
+	HFONT hFont = CreateFont(14,0,0,0,FW_DONTCARE,FALSE,FALSE,FALSE,ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH|FF_SWISS,L"Arial");
+	SendMessage(logoff, WM_SETFONT, (WPARAM)hFont, TRUE);
+	
+	SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)icon[1]);
+	
+	ShowWindow(hwnd, SW_SHOW);
+	SetForegroundWindow(hwnd);
+}
+
+/*
 LRESULT CALLBACK ShutdownDialogProc(INT nCode, WPARAM wParam, LPARAM lParam) {
 	if (nCode == HCBT_ACTIVATE) {
 		//Edit the caption of the buttons
@@ -600,6 +685,7 @@ void AskShutdown() {
 		
 	}
 }
+*/
 
 LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	if (msg == WM_ICONTRAY) {
@@ -762,13 +848,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	}
 	else if (msg == WM_HELP) {
 		ShellExecute(NULL, L"open", settings.HelpUrl, NULL, NULL, SW_SHOWNORMAL);
-	}
-	else if (/*msg == WM_CLOSE ||*/ (msg == WM_KEYDOWN && wParam == VK_ESCAPE)) {
-		ShowWindow(hwnd, SW_HIDE);
-		return;
-	}
-	else if (msg == WM_SYSCOMMAND && wParam&0xFFF0 == SC_CLOSE) {
-		return 0;
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }

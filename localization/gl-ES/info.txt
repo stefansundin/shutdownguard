@@ -1,0 +1,39 @@
+ShutdownGuard
+Feito por Stefan Sundin
+
+Evita que Windows se apague, reinicie ou peche a sesión.
+Cando ShutdownGuard evite algo aparecerá unha notificación na bandexa do sistema preguntándoche se queres continuar.
+Para mostrar o dialogo de apagado fai clic co botón do medio do rato na icona.
+
+ShutdownGuard ha comprobar automaticamente se hai actualizacións.
+Pódelo desactivar editando ShutdownGuard.ini, poñendo CheckForUpdate=0 no apartado [Update].
+
+Podes usar -hide como parámetro para esconder a icona na bandexa do sistema.
+
+Visita a páxina web en http://shutdownguard.googlecode.com/
+Envía a túa opinión ou comentarios (en inglés ou senón poñendo "Galician" ó comezo) a recover89@gmail.com
+
+Se atopas útil este programa, considera doar diñeiro por favor.
+Podes atopar como doar na páxina web.
+
+ShutdownGuard é un programa de código fonte aberto, baixo a licencia GPL.
+
+Listaxe de Cambios:
+-------------------
+0.4:
+Engadida a opción Silent.
+Engadida a opción HelpUrl.
+Agora pódese editar a lingua en ShutdownGuard.ini seleccionando adecuadamente Language=lingua.
+
+0.3 - 2008-12-25:
+Arranxado un problema que impedía algunhas veces que se mostrase a notificación.
+Arranxado un problema ca icona ó se reiniciar o explorador de Windows.
+Engadido a comprobación de actualización.
+
+0.2 - 2008-11-14:
+Compatible con Vista.
+Cambio de orde nos botóns do diálogo de apagado.
+Clic co botón do medio do rato na icona para mostrar o cadro de diálogo de apagado.
+
+0.1 - 2008-06-23:
+Lanzamento inicial.

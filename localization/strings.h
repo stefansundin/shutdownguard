@@ -1,5 +1,6 @@
 #include "en-US/strings.h"
 #include "es-ES/strings.h"
+#include "gl-ES/strings.h"
 #include "lt-LT/strings.h"
 #include "nn-NO/strings.h"
 
@@ -9,8 +10,9 @@ struct {
 } languages[] = {
 	{L"en-US", &en_US},
 	{L"es-ES", &es_ES},
+	{L"gl-ES", &gl_ES},
 	{L"lt-LT", &lt_LT},
 	{L"nn-NO", &nn_NO},
 };
 
-int num_languages = 4;
+int num_languages = 5;

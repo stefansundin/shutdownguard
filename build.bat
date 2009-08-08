@@ -1,6 +1,7 @@
 @echo off
 
 taskkill /IM ShutdownGuard.exe
+rem taskkill /F /IM ShutdownGuard.exe
 
 if not exist build (
 	mkdir build
