@@ -32,21 +32,21 @@ wchar_t txt[1000];
 #ifdef DEBUG
 #include "include/error.h"
 #else
-#define Error(a,b,c,d)
+#define Error(a,b,c,d,e)
 #endif
 
 int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodCaller) {
 	//Load dbghelp.dll
 	HINSTANCE dbghelp = LoadLibrary(L"dbghelp.dll");
 	if (dbghelp == NULL) {
-		Error(L"LoadLibrary('dbghelp.dll')", L"Can not find dbghelp.dll.", GetLastError(), __LINE__);
+		Error(L"LoadLibrary('dbghelp.dll')", L"Can not find dbghelp.dll.", GetLastError(), TEXT(__FILE__), __LINE__);
 		return 1;
 	}
 	//Get address to ImageDirectoryEntryToData
 	PVOID WINAPI (*ImageDirectoryEntryToData)(PVOID,BOOLEAN,USHORT,PULONG)=NULL;
 	ImageDirectoryEntryToData = (PVOID)GetProcAddress(dbghelp,"ImageDirectoryEntryToData");
 	if (ImageDirectoryEntryToData == NULL) {
-		Error(L"GetProcAddress('ImageDirectoryEntryToData')", L"Failed to load ImageDirectoryEntryToData() from dbghelp.dll.", GetLastError(), __LINE__);
+		Error(L"GetProcAddress('ImageDirectoryEntryToData')", L"Failed to load ImageDirectoryEntryToData() from dbghelp.dll.", GetLastError(), TEXT(__FILE__), __LINE__);
 		return 1;
 	}
 	
@@ -57,7 +57,7 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 	FreeLibrary(dbghelp);
 	
 	if (pImportDesc == NULL) {
-		Error(L"pImportDesc == NULL", L"This module has no import section.", 0, __LINE__);
+		Error(L"pImportDesc == NULL", L"This module has no import section.", 0, TEXT(__FILE__), __LINE__);
 		return 1;
 	}
 	
@@ -70,7 +70,7 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 	}
 	
 	if (pImportDesc->Name == 0) {
-		Error(L"pImportDesc->Name == 0", L"This module doesn't import any functions from this callee.", 0, __LINE__);
+		Error(L"pImportDesc->Name == 0", L"This module doesn't import any functions from this callee.", 0, TEXT(__FILE__), __LINE__);
 		return 1;
 	}
 
@@ -96,7 +96,7 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 		}
 	}
 
-	Error(L"Patching was NOT successful", L"The function is not in the caller's import section.", 0, __LINE__);
+	Error(L"Patching was NOT successful", L"The function is not in the caller's import section.", 0, TEXT(__FILE__), __LINE__);
 	return 1;
 }
 

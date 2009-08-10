@@ -189,7 +189,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	icon[0] = LoadImage(hInst,L"tray-disabled",IMAGE_ICON,0,0,LR_DEFAULTCOLOR);
 	icon[1] = LoadImage(hInst,L"tray-enabled",IMAGE_ICON,0,0,LR_DEFAULTCOLOR);
 	if (icon[0] == NULL || icon[1] == NULL) {
-		Error(L"LoadImage('tray-*')", L"Fatal error.", GetLastError(), __LINE__);
+		Error(L"LoadImage('tray-*')", L"Fatal error.", GetLastError(), TEXT(__FILE__), __LINE__);
 		PostQuitMessage(1);
 	}
 	
@@ -221,18 +221,18 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		//Load user32.dll
 		user32 = LoadLibrary(L"user32.dll");
 		if (user32 == NULL) {
-			Error(L"LoadLibrary('user32.dll')", L"This really shouldn't have happened.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), __LINE__);
+			Error(L"LoadLibrary('user32.dll')", L"This really shouldn't have happened.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), TEXT(__FILE__), __LINE__);
 		}
 		else {
 			//Get address to ShutdownBlockReasonCreate
 			ShutdownBlockReasonCreate = GetProcAddress(user32,"ShutdownBlockReasonCreate");
 			if (ShutdownBlockReasonCreate == NULL) {
-				Error(L"GetProcAddress('ShutdownBlockReasonCreate')", L"Failed to load Vista specific function.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), __LINE__);
+				Error(L"GetProcAddress('ShutdownBlockReasonCreate')", L"Failed to load Vista specific function.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), TEXT(__FILE__), __LINE__);
 			}
 			//ShutdownBlockReasonDestroy
 			ShutdownBlockReasonDestroy = GetProcAddress(user32,"ShutdownBlockReasonDestroy");
 			if (ShutdownBlockReasonDestroy == NULL) {
-				Error(L"GetProcAddress('ShutdownBlockReasonDestroy')", L"Failed to load Vista specific function.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), __LINE__);
+				Error(L"GetProcAddress('ShutdownBlockReasonDestroy')", L"Failed to load Vista specific function.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), TEXT(__FILE__), __LINE__);
 			}
 			vista = 1;
 		}
@@ -240,7 +240,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	
 	//Make Windows query this program first
 	if (SetProcessShutdownParameters(0x4FF,0) == 0) {
-		Error(L"SetProcessShutdownParameters(0x4FF)", L"This means that programs started before "APP_NAME" will probably be closed before the shutdown can be stopped.", GetLastError(), __LINE__);
+		Error(L"SetProcessShutdownParameters(0x4FF)", L"This means that programs started before "APP_NAME" will probably be closed before the shutdown can be stopped.", GetLastError(), TEXT(__FILE__), __LINE__);
 	}
 	
 	//Check for update
@@ -276,7 +276,7 @@ int PatchApps() {
 	TOKEN_PRIVILEGES tkp;
 	if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,&hToken) == 0) {
 		#ifdef DEBUG
-		Error(L"OpenProcessToken()", L"PatchApps()", GetLastError(), __LINE__);
+		Error(L"OpenProcessToken()", L"PatchApps()", GetLastError(), TEXT(__FILE__), __LINE__);
 		#endif
 	}
 	else {
@@ -288,7 +288,7 @@ int PatchApps() {
 		//Enable SeDebugPrivilege
 		if (AdjustTokenPrivileges(hToken,FALSE,&tkp,0,NULL,0) == 0 || GetLastError() != ERROR_SUCCESS) {
 			#ifdef DEBUG
-			Error(L"AdjustTokenPrivileges()", L"PatchApps()", GetLastError(), __LINE__);
+			Error(L"AdjustTokenPrivileges()", L"PatchApps()", GetLastError(), TEXT(__FILE__), __LINE__);
 			#endif
 		}
 		else {
@@ -302,7 +302,7 @@ int PatchApps() {
 	HMODULE WINAPI (*pfnLoadLibrary)(LPCTSTR) = NULL;
 	pfnLoadLibrary = (PVOID)GetProcAddress(kernel32,"LoadLibraryA");
 	if (pfnLoadLibrary == NULL) {
-		Error(L"GetProcAddress('LoadLibraryA')", L"Failed to load LoadLibrary().", GetLastError(), __LINE__);
+		Error(L"GetProcAddress('LoadLibraryA')", L"Failed to load LoadLibrary().", GetLastError(), TEXT(__FILE__), __LINE__);
 		return;
 	}
 	
@@ -315,14 +315,14 @@ int PatchApps() {
 	BOOL WINAPI (*QueryFullProcessImageName)(HANDLE, DWORD, LPTSTR, PDWORD) = NULL;
 	QueryFullProcessImageName = GetProcAddress(kernel32,"QueryFullProcessImageNameW");
 	if (QueryFullProcessImageName == NULL) {
-		Error(L"GetProcAddress('QueryFullProcessImageName')", L"Failed to load QueryFullProcessImageName().", GetLastError(), __LINE__);
+		Error(L"GetProcAddress('QueryFullProcessImageName')", L"Failed to load QueryFullProcessImageName().", GetLastError(), TEXT(__FILE__), __LINE__);
 		return;
 	}
 	
 	//Enumerate processes
 	DWORD pids[1024], cbNeeded;
 	if (EnumProcesses(pids,sizeof(pids),&cbNeeded) == 0) {
-		Error(L"EnumProcesses()", L"Could not enumerate processes. PatchApps() failed.", GetLastError(), __LINE__);
+		Error(L"EnumProcesses()", L"Could not enumerate processes. PatchApps() failed.", GetLastError(), TEXT(__FILE__), __LINE__);
 		return;
 	}
 	
@@ -339,12 +339,12 @@ int PatchApps() {
 		if (process == NULL) {
 			wchar_t txt2[MAX_PATH];
 			wsprintf(txt2, L"Could not open process.\npid: %d", pids[i]);
-			Error(L"OpenProcess(PROCESS_QUERY_INFORMATION)", txt2, GetLastError(), __LINE__);
+			Error(L"OpenProcess(PROCESS_QUERY_INFORMATION)", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
 			continue;
 		}
 		DWORD len = MAX_PATH;
 		if (QueryFullProcessImageName(process,0,txt,&len) == 0) {
-			Error(L"QueryFullProcessImageName()", L"Could not get path of process.", GetLastError(), __LINE__);
+			Error(L"QueryFullProcessImageName()", L"Could not get path of process.", GetLastError(), TEXT(__FILE__), __LINE__);
 		}
 		CloseHandle(process);
 		
@@ -356,26 +356,26 @@ int PatchApps() {
 			if (process == NULL) {
 				wchar_t txt2[100];
 				wsprintf(txt2, L"Could not open process.\npid: %d", pids[i]);
-				Error(L"OpenProcess()", txt2 /*L"Could not open process."*/, GetLastError(), __LINE__);
+				Error(L"OpenProcess()", txt2 /*L"Could not open process."*/, GetLastError(), TEXT(__FILE__), __LINE__);
 				continue;
 			}
 			
 			//Write dll path to process memory
 			PVOID memory = VirtualAllocEx(process,NULL,strlen(path)+1,MEM_COMMIT,PAGE_READWRITE);
 			if (memory == NULL) {
-				Error(L"VirtualAllocEx()", L"Could not allocate memory in process.", GetLastError(), __LINE__);
+				Error(L"VirtualAllocEx()", L"Could not allocate memory in process.", GetLastError(), TEXT(__FILE__), __LINE__);
 				CloseHandle(process);
 				continue;
 			}
 			if (WriteProcessMemory(process,memory,path,strlen(path)+1,NULL) == 0) {
-				Error(L"WriteProcessMemory()", L"Could not write memory to process.", GetLastError(), __LINE__);
+				Error(L"WriteProcessMemory()", L"Could not write memory to process.", GetLastError(), TEXT(__FILE__), __LINE__);
 				CloseHandle(process);
 				continue;
 			}
 			
 			//Inject dll
 			if (CreateRemoteThread(process,NULL,0,(LPTHREAD_START_ROUTINE)pfnLoadLibrary,memory,0,NULL) == NULL) {
-				Error(L"CreateRemoteThread()", L"Could not create remote thread.", GetLastError(), __LINE__);
+				Error(L"CreateRemoteThread()", L"Could not create remote thread.", GetLastError(), TEXT(__FILE__), __LINE__);
 				CloseHandle(process);
 			}
 			
@@ -467,7 +467,7 @@ int UpdateTray() {
 		while (Shell_NotifyIcon((tray_added?NIM_MODIFY:NIM_ADD),&traydata) == FALSE) {
 			tries++;
 			if (tries >= 10) {
-				Error(L"Shell_NotifyIcon(NIM_ADD/NIM_MODIFY)", L"Failed to update tray icon.", GetLastError(), __LINE__);
+				Error(L"Shell_NotifyIcon(NIM_ADD/NIM_MODIFY)", L"Failed to update tray icon.", GetLastError(), TEXT(__FILE__), __LINE__);
 				return 1;
 			}
 			Sleep(100);
@@ -486,7 +486,7 @@ int RemoveTray() {
 	}
 	
 	if (Shell_NotifyIcon(NIM_DELETE,&traydata) == FALSE) {
-		Error(L"Shell_NotifyIcon(NIM_DELETE)", L"Failed to remove tray icon.", GetLastError(), __LINE__);
+		Error(L"Shell_NotifyIcon(NIM_DELETE)", L"Failed to remove tray icon.", GetLastError(), TEXT(__FILE__), __LINE__);
 		return 1;
 	}
 	
@@ -500,14 +500,14 @@ void SetAutostart(int on, int hide) {
 	HKEY key;
 	int error = RegCreateKeyEx(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,NULL,0,KEY_SET_VALUE,NULL,&key,NULL);
 	if (error != ERROR_SUCCESS) {
-		Error(L"RegOpenKeyEx(HKEY_CURRENT_USER,'Software\\Microsoft\\Windows\\CurrentVersion\\Run')", L"Error opening the registry.", error, __LINE__);
+		Error(L"RegOpenKeyEx(HKEY_CURRENT_USER,'Software\\Microsoft\\Windows\\CurrentVersion\\Run')", L"Error opening the registry.", error, TEXT(__FILE__), __LINE__);
 		return;
 	}
 	if (on) {
 		//Get path
 		wchar_t path[MAX_PATH];
 		if (GetModuleFileName(NULL,path,MAX_PATH) == 0) {
-			Error(L"GetModuleFileName(NULL)", L"SetAutostart()", GetLastError(), __LINE__);
+			Error(L"GetModuleFileName(NULL)", L"SetAutostart()", GetLastError(), TEXT(__FILE__), __LINE__);
 			return;
 		}
 		//Add
@@ -515,7 +515,7 @@ void SetAutostart(int on, int hide) {
 		swprintf(value, (hide?L"\"%s\" -hide":L"\"%s\""), path);
 		error = RegSetValueEx(key,APP_NAME,0,REG_SZ,(LPBYTE)value,(wcslen(value)+1)*sizeof(wchar_t));
 		if (error != ERROR_SUCCESS) {
-			Error(L"RegSetValueEx('"APP_NAME"')", L"SetAutostart()", error, __LINE__);
+			Error(L"RegSetValueEx('"APP_NAME"')", L"SetAutostart()", error, TEXT(__FILE__), __LINE__);
 			return;
 		}
 	}
@@ -523,7 +523,7 @@ void SetAutostart(int on, int hide) {
 		//Remove
 		error = RegDeleteValue(key,APP_NAME);
 		if (error != ERROR_SUCCESS) {
-			Error(L"RegDeleteValue('"APP_NAME"')", L"SetAutostart()", error, __LINE__);
+			Error(L"RegDeleteValue('"APP_NAME"')", L"SetAutostart()", error, TEXT(__FILE__), __LINE__);
 			return;
 		}
 	}
@@ -554,7 +554,7 @@ LRESULT CALLBACK DialogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				//Get process token
 				HANDLE hToken;
 				if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,&hToken) == 0) {
-					Error(L"OpenProcessToken()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), __LINE__);
+					Error(L"OpenProcessToken()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), TEXT(__FILE__), __LINE__);
 					return;
 				}
 				
@@ -567,7 +567,7 @@ LRESULT CALLBACK DialogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				//Enable SeShutdownPrivilege
 				AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0); 
 				if (GetLastError() != ERROR_SUCCESS) {
-					Error(L"AdjustTokenPrivileges()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), __LINE__);
+					Error(L"AdjustTokenPrivileges()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), TEXT(__FILE__), __LINE__);
 					return;
 				}
 				
@@ -658,7 +658,7 @@ void AskShutdown() {
 			//Get process token
 			HANDLE hToken;
 			if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,&hToken) == 0) {
-				Error(L"OpenProcessToken()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), __LINE__);
+				Error(L"OpenProcessToken()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), TEXT(__FILE__), __LINE__);
 				return;
 			}
 			
@@ -671,7 +671,7 @@ void AskShutdown() {
 			//Enable SeShutdownPrivilege
 			AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0); 
 			if (GetLastError() != ERROR_SUCCESS) {
-				Error(L"AdjustTokenPrivileges()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), __LINE__);
+				Error(L"AdjustTokenPrivileges()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), TEXT(__FILE__), __LINE__);
 				return;
 			}
 			
