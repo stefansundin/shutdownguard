@@ -27,7 +27,9 @@ struct strings lt_LT = {
  /* shutdown_ask */      L"Ką norite daryti?",
  /* shutdown_logoff */   L"Išsiregistruoti",
  /* shutdown_shutdown */ L"Išjungti sistemą",
+ /* shutdown_reboot */   L"Reboot", //Not translated yet
  /* shutdown_nothing */  L"Nieko",
+ /* shutdown_help */     L"Help", //Not translated yet
  /* update_balloon */    L"Rasta nauja versija!",
  /* update_dialog */     L"Rasta nauja versija.\nEiti į tinklapį?",
  /* about_title */       L"Apie " APP_NAME,

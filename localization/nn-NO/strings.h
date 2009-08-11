@@ -26,8 +26,10 @@ struct strings nn_NO = {
  /* balloon */           L"Klikk her for å halde fram avskruinga.",
  /* shutdown_ask */      L"Kva vil du gjere?",
  /* shutdown_logoff */   L"Logg av",
+ /* shutdown_reboot */   L"Reboot", //Not translated yet
  /* shutdown_shutdown */ L"Skru av",
  /* shutdown_nothing */  L"Ingenting",
+ /* shutdown_help */     L"Help", //Not translated yet
  /* update_balloon */    L"Fann ein ny versjon",
  /* update_dialog */     L"Ein ny versjon er tilgjengeleg.\nGå til vevside?",
  /* about_title */       L"Om " APP_NAME,

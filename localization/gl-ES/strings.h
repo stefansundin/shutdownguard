@@ -26,7 +26,9 @@ struct strings gl_ES = {
  /* shutdown_ask */      L"Que queres facer?",
  /* shutdown_logoff */   L"Pechar a sesión",
  /* shutdown_shutdown */ L"Apagar",
+ /* shutdown_reboot */   L"Reboot", //Not translated yet
  /* shutdown_nothing */  L"Nada",
+ /* shutdown_help */     L"Help", //Not translated yet
  /* update_balloon */    L"Nova versión dispoñíbel!",
  /* update_dialog */     L"Unha nova versión está dispoñíbel.\nQueres ir á páxina web?",
  /* about_title */       L"Acerca de " APP_NAME,

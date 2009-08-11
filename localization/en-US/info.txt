@@ -21,8 +21,9 @@ ShutdownGuard is open source, licensed under GPL.
 Changelog
 ---------
 0.4:
+Added reboot button to the shutdown dialog.
 Added Silent option.
-ADded HelpUrl option.
+Added HelpUrl option.
 Language can now be changed in ShutdownGuard.ini.
 
 0.3 - 2008-12-25:
