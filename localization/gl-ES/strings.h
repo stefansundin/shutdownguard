@@ -26,14 +26,15 @@ struct strings gl_ES = {
  /* shutdown_ask */      L"Que queres facer?",
  /* shutdown_logoff */   L"Pechar a sesión",
  /* shutdown_shutdown */ L"Apagar",
- /* shutdown_reboot */   L"Reboot", //Not translated yet
+ /* shutdown_reboot */   L"Reiniciar",
  /* shutdown_nothing */  L"Nada",
- /* shutdown_help */     L"Help", //Not translated yet
+ /* shutdown_help */     L"Axuda",
  /* update_balloon */    L"Nova versión dispoñíbel!",
  /* update_dialog */     L"Unha nova versión está dispoñíbel.\nQueres ir á páxina web?",
  /* about_title */       L"Acerca de " APP_NAME,
  /* about */             APP_NAME " - " APP_VERSION "\n\
 Feito por Stefan Sundin\n\
+Traducido por Alexander De Sousa\n\
 \n\
 Evita que Windows se apague, reinicie ou peche a sesión.\n\
 Cando ShutdownGuard evite algo aparecerá unha notificación na bandexa do sistema preguntándoche se queres continuar.\n\

@@ -1,5 +1,6 @@
 ShutdownGuard
 Feito por Stefan Sundin
+Traducido por Alexander De Sousa
 
 Evita que Windows se apague, reinicie ou peche a sesión.
 Cando ShutdownGuard evite algo aparecerá unha notificación na bandexa do sistema preguntándoche se queres continuar.
@@ -21,6 +22,7 @@ ShutdownGuard é un programa de código fonte aberto, baixo a licencia GPL.
 Listaxe de Cambios:
 -------------------
 0.4:
+Engadiuse o botón de reinicio.
 Engadida a opción Silent.
 Engadida a opción HelpUrl.
 Agora pódese editar a lingua en ShutdownGuard.ini seleccionando adecuadamente Language=lingua.
