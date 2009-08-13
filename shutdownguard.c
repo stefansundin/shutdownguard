@@ -38,7 +38,6 @@
 #define SWM_EXIT               WM_APP+10
 
 //Stuff missing in MinGW
-#define HWND_MESSAGE ((HWND)-3)
 #define NIIF_USER 4
 #define NIN_BALLOONSHOW        WM_USER+2
 #define NIN_BALLOONHIDE        WM_USER+3
@@ -100,6 +99,8 @@ wchar_t txt[1000];
 UINT WM_SHUTDOWNBLOCKED = 0;
 int enabled = 1;
 int vista = 0;
+HWND hwnd = NULL;
+HWND helpbutton = NULL;
 
 //Error() and CheckForUpdate()
 #include "include/error.h"
@@ -178,14 +179,29 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	wnd.hIcon = NULL;
 	wnd.hIconSm = NULL;
 	wnd.hCursor = LoadImage(NULL,IDC_ARROW,IMAGE_CURSOR,0,0,LR_DEFAULTCOLOR|LR_SHARED);
-	wnd.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
+	wnd.hbrBackground = (HBRUSH)(COLOR_BTNFACE+1);
 	wnd.lpszMenuName = NULL;
 	wnd.lpszClassName = APP_NAME;
 	//Register class
 	RegisterClassEx(&wnd);
 	
 	//Create window
-	HWND hwnd = CreateWindowEx(0, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, HWND_MESSAGE, NULL, hInst, NULL);
+	hwnd = CreateWindowEx(WS_EX_TOPMOST, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW^WS_SIZEBOX^WS_MAXIMIZEBOX^WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 360, 126, NULL, NULL, hInst, NULL);
+	HWND text = CreateWindowEx(0, L"STATIC", l10n->shutdown_ask, WS_TABSTOP|WS_VISIBLE|WS_CHILD, 90, 22, 200, 25, hwnd, NULL, hInst, NULL);
+	HWND logoff = CreateWindowEx(0, L"BUTTON", l10n->shutdown_logoff, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 15, 60, 75, 23, hwnd, (HMENU)IDOK, hInst, NULL);
+	HWND shutdown = CreateWindowEx(0, L"BUTTON", l10n->shutdown_shutdown, BS_DEFPUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 100, 60, 75, 23, hwnd, (HMENU)IDCLOSE, hInst, NULL);
+	HWND reboot = CreateWindowEx(0, L"BUTTON", l10n->shutdown_reboot, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 185, 60, 75, 23, hwnd, (HMENU)IDRETRY, hInst, NULL);
+	HWND nothing = CreateWindowEx(0, L"BUTTON", l10n->shutdown_nothing, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 270, 60, 75, 23, hwnd, (HMENU)IDCANCEL, hInst, NULL);
+	helpbutton = CreateWindowEx(0, L"BUTTON", l10n->shutdown_help, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 355, 60, 75, 23, hwnd, (HMENU)IDHELP, hInst, NULL);
+	
+	//Set font
+	HFONT font = CreateFont(14,0,0,0,FW_DONTCARE,FALSE,FALSE,FALSE,ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH|FF_SWISS,L"MS Sans Serif");
+	SendMessage(text, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(logoff, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(shutdown, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(reboot, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(nothing, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(helpbutton, WM_SETFONT, (WPARAM)font, TRUE);
 	
 	//Load icons
 	icon[0] = LoadImage(hInst,L"tray-disabled",IMAGE_ICON,0,0,LR_DEFAULTCOLOR);
@@ -549,112 +565,19 @@ void CenterWindow(HWND wnd) {
 	MoveWindow(wnd, ((GetSystemMetrics(SM_CXSCREEN)-window.right)/2+4)&~7, (GetSystemMetrics(SM_CYSCREEN)-window.bottom)/2, window.right, window.bottom, FALSE);
 }
 
-LRESULT CALLBACK DialogProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
-	if (msg == WM_CREATE) {
-		CenterWindow(hwnd);
-		return 0;
-	}
-	else if (msg == WM_COMMAND) {
-		int button = LOWORD(wParam);
-		if (button == IDOK || button == IDCLOSE || button == IDRETRY) {
-			enabled = 0;
-			hide = 0;
-			UpdateTray();
-			if (button == IDOK) {
-				ExitWindowsEx(EWX_LOGOFF, 0);
-			}
-			else {
-				//Get process token
-				HANDLE hToken;
-				if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,&hToken) == 0) {
-					Error(L"OpenProcessToken()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), TEXT(__FILE__), __LINE__);
-					return 1;
-				}
-				
-				//Get LUID for SeShutdownPrivilege
-				TOKEN_PRIVILEGES tkp;
-				LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid);
-				tkp.PrivilegeCount = 1;
-				tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-				
-				//Enable SeShutdownPrivilege
-				AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0); 
-				if (GetLastError() != ERROR_SUCCESS) {
-					Error(L"AdjustTokenPrivileges()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), TEXT(__FILE__), __LINE__);
-					return 1;
-				}
-				
-				//Do it!!
-				ExitWindowsEx((button==IDCLOSE?EWX_SHUTDOWN:EWX_REBOOT), 0);
-				
-				//Disable SeShutdownPrivilege
-				tkp.Privileges[0].Attributes = 0;
-				AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0);
-			}
-		}
-		else if (button == IDCANCEL) {
-			DestroyWindow(hwnd);
-		}
-		else if (button == IDHELP) {
-			ShellExecute(NULL, L"open", settings.HelpUrl, NULL, NULL, SW_SHOWNORMAL);
-		}
-	}
-	else if (msg == WM_CLOSE || (msg == WM_KEYDOWN && wParam == VK_ESCAPE)) {
-		//ShowWindow(hwnd, SW_HIDE);
-		DestroyWindow(hwnd);
-		return 0;
-	}
-	/*else if (msg == WM_SYSCOMMAND && wParam&0xFFF0 == SC_CLOSE) {
-		return 0;
-	}*/
-	return DefWindowProc(hwnd, msg, wParam, lParam);
-}
-
 void AskShutdown() {
-	HINSTANCE hInst = GetModuleHandle(NULL);
-	
-	//Create dialog
-	WNDCLASSEX wnd;
-	wnd.cbSize = sizeof(WNDCLASSEX);
-	wnd.style = 0;
-	wnd.lpfnWndProc = DialogProc;
-	wnd.cbClsExtra = 0;
-	wnd.cbWndExtra = 0;
-	wnd.hInstance = hInst;
-	wnd.hIcon = NULL;
-	wnd.hIconSm = NULL;
-	wnd.hCursor = LoadImage(NULL,IDC_ARROW,IMAGE_CURSOR,0,0,LR_DEFAULTCOLOR|LR_SHARED);
-	wnd.hbrBackground = (HBRUSH)(COLOR_BTNFACE+1);
-	wnd.lpszMenuName = NULL;
-	wnd.lpszClassName = APP_NAME L"-AskShutdown";
-	RegisterClassEx(&wnd);
-	
-	//Create window
-	HWND hwnd = CreateWindowEx(WS_EX_TOPMOST, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW^WS_SIZEBOX^WS_MAXIMIZEBOX^WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, (settings.HelpUrl==NULL?360:450), 126, NULL, NULL, hInst, NULL);
-	HWND text = CreateWindowEx(0, L"STATIC", l10n->shutdown_ask, WS_TABSTOP|WS_VISIBLE|WS_CHILD, 90, 22, 200, 25, hwnd, NULL, hInst, NULL);
-	HWND logoff = CreateWindowEx(0, L"BUTTON", l10n->shutdown_logoff, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 15, 60, 75, 23, hwnd, (HMENU)IDOK, hInst, NULL);
-	HWND shutdown = CreateWindowEx(0, L"BUTTON", l10n->shutdown_shutdown, BS_DEFPUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 100, 60, 75, 23, hwnd, (HMENU)IDCLOSE, hInst, NULL);
-	HWND reboot = CreateWindowEx(0, L"BUTTON", l10n->shutdown_reboot, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 185, 60, 75, 23, hwnd, (HMENU)IDRETRY, hInst, NULL);
-	HWND nothing = CreateWindowEx(0, L"BUTTON", l10n->shutdown_nothing, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 270, 60, 75, 23, hwnd, (HMENU)IDCANCEL, hInst, NULL);
-	
-	//Set font
-	HFONT font = CreateFont(14,0,0,0,FW_DONTCARE,FALSE,FALSE,FALSE,ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH|FF_SWISS,L"MS Sans Serif");
-	SendMessage(text, WM_SETFONT, (WPARAM)font, TRUE);
-	SendMessage(logoff, WM_SETFONT, (WPARAM)font, TRUE);
-	SendMessage(shutdown, WM_SETFONT, (WPARAM)font, TRUE);
-	SendMessage(reboot, WM_SETFONT, (WPARAM)font, TRUE);
-	SendMessage(nothing, WM_SETFONT, (WPARAM)font, TRUE);
-	
 	//Help button
-	if (settings.HelpUrl != NULL) {
-		HWND help = CreateWindowEx(0, L"BUTTON", l10n->shutdown_help, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 355, 60, 75, 23, hwnd, (HMENU)IDHELP, hInst, NULL);
-		SendMessage(help, WM_SETFONT, (WPARAM)font, TRUE);
+	if (settings.HelpUrl == NULL) {
+		MoveWindow(hwnd, 0, 0, 360, 126, FALSE);
+		ShowWindow(helpbutton, SW_HIDE);
 	}
-	
-	//Associate icon with window
-	SendMessage(hwnd, WM_SETICON, ICON_BIG, (LPARAM)icon[1]);
+	else {
+		MoveWindow(hwnd, 0, 0, 450, 126, FALSE);
+		ShowWindow(helpbutton, SW_SHOW);
+	}
 	
 	//Show window
+	CenterWindow(hwnd);
 	ShowWindow(hwnd, SW_SHOW);
 	SetForegroundWindow(hwnd);
 }
@@ -782,6 +705,52 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		else if (wmId == SWM_EXIT) {
 			DestroyWindow(hwnd);
 		}
+		else if (wmId == IDOK || wmId == IDCLOSE || wmId == IDRETRY) {
+			enabled = 0;
+			hide = 0;
+			UpdateTray();
+			if (wmId == IDOK) {
+				ExitWindowsEx(EWX_LOGOFF, 0);
+			}
+			else {
+				//Get process token
+				HANDLE hToken;
+				if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,&hToken) == 0) {
+					Error(L"OpenProcessToken()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), TEXT(__FILE__), __LINE__);
+					return 1;
+				}
+				
+				//Get LUID for SeShutdownPrivilege
+				TOKEN_PRIVILEGES tkp;
+				LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid);
+				tkp.PrivilegeCount = 1;
+				tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+				
+				//Enable SeShutdownPrivilege
+				AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0); 
+				if (GetLastError() != ERROR_SUCCESS) {
+					Error(L"AdjustTokenPrivileges()", L"Could not get privilege to shutdown computer. Try shutting down manually.", GetLastError(), TEXT(__FILE__), __LINE__);
+					return 1;
+				}
+				
+				//Do it!!
+				ExitWindowsEx((wmId==IDCLOSE?EWX_SHUTDOWN:EWX_REBOOT), 0);
+				
+				//Disable SeShutdownPrivilege
+				tkp.Privileges[0].Attributes = 0;
+				AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0);
+			}
+		}
+		else if (wmId == IDCANCEL) {
+			ShowWindow(hwnd, SW_HIDE);
+		}
+		else if (wmId == IDHELP) {
+			ShellExecute(NULL, L"open", settings.HelpUrl, NULL, NULL, SW_SHOWNORMAL);
+		}
+	}
+	else if ((msg == WM_CLOSE && IsWindowVisible(hwnd)) || (msg == WM_KEYDOWN && wParam == VK_ESCAPE)) {
+		ShowWindow(hwnd, SW_HIDE);
+		return 0;
 	}
 	else if (msg == WM_DESTROY) {
 		showerror = 0;
