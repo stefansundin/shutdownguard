@@ -1,0 +1,18 @@
+#summary Read about PatchApps
+#labels Deprecated
+
+= Introduction =
+
+PatchApps is a new feature in 0.4. It makes ShutdownGuard patch other processes (overwrite their memory), so that when they attempt to call ExitWindowsEx(), the call is intercepted and stopped.
+
+= Stability =
+
+Writing in the memory of other processes is always dangerous, so note that there are a slim chance of crashing the other process. And if you attempt to patch a system process, you may crash the entire system and get a bluescreen.
+
+This is also the first time I have programmed something like this, so use it at your own risk.
+
+= Proofness =
+
+*PatchApps is not bullet-proof!* If a program *really* wants to work around this, it can do so very easily. ShutdownGuard only patches the executable, not the modules (DLLs) it has loaded.
+
+I will try to improve PatchApps in upcoming versions.
