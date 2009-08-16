@@ -8,45 +8,55 @@
 	(at your option) any later version.
 */
 
-#define UNICODE
-#define _UNICODE
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 #define _WIN32_WINNT 0x0500
 #include <windows.h>
 
 //App
-#define APP_NAME L"ShutdownGuard"
+#define APP_NAME "ShutdownGuard"
 
 //Cool stuff
-HMODULE app;
-PROC fnExitWindowsEx;
+HMODULE app = NULL;
+PROC fnExitWindowsEx = NULL;
 UINT WM_SHUTDOWNBLOCKED = 0;
 int patched = 0;
 
-wchar_t txt[1000];
+char txt[1000];
 
-//Error()
 #ifdef DEBUG
-#include "include/error.h"
+void Log(char *line) {
+	FILE *f = fopen("C:\\shutdownguard-log.txt","ab");
+	fprintf(f, "%s\n", line);
+	fflush(f);
+	fclose(f);
+}
+void Error(char *func, int errorcode, char *file, int line) {
+	//Format message
+	char errormsg[100];
+	FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM, NULL, errorcode, 0, errormsg, sizeof(errormsg), NULL);
+	errormsg[strlen(errormsg)-2] = '\0'; //Remove that damn newline at the end of the formatted error message
+	//Write error to file
+	sprintf(txt, "%s failed in file %s, line %d. Error: %s (%d).\n", func, file, line, errormsg, errorcode);
+	Log(txt);
+}
 #else
-#define Error(a,b,c,d,e)
+#define Log(a)
+#define Error(a,b,c,d)
 #endif
 
 int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodCaller) {
 	//Load dbghelp.dll
-	HINSTANCE dbghelp = LoadLibrary(L"dbghelp.dll");
+	HINSTANCE dbghelp = LoadLibrary("dbghelp.dll");
 	if (dbghelp == NULL) {
-		Error(L"LoadLibrary('dbghelp.dll')", L"Can not find dbghelp.dll.", GetLastError(), TEXT(__FILE__), __LINE__);
+		Error("LoadLibrary('dbghelp.dll')", GetLastError(), TEXT(__FILE__), __LINE__);
 		return 1;
 	}
 	//Get address to ImageDirectoryEntryToData
 	PVOID WINAPI (*ImageDirectoryEntryToData)(PVOID,BOOLEAN,USHORT,PULONG)=NULL;
 	ImageDirectoryEntryToData = (PVOID)GetProcAddress(dbghelp,"ImageDirectoryEntryToData");
 	if (ImageDirectoryEntryToData == NULL) {
-		Error(L"GetProcAddress('ImageDirectoryEntryToData')", L"Failed to load ImageDirectoryEntryToData() from dbghelp.dll.", GetLastError(), TEXT(__FILE__), __LINE__);
+		Error("GetProcAddress('ImageDirectoryEntryToData')", GetLastError(), TEXT(__FILE__), __LINE__);
 		return 1;
 	}
 	
@@ -57,7 +67,7 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 	FreeLibrary(dbghelp);
 	
 	if (pImportDesc == NULL) {
-		Error(L"pImportDesc == NULL", L"This module has no import section.", 0, TEXT(__FILE__), __LINE__);
+		Log("This module has no import section.");
 		return 1;
 	}
 	
@@ -70,7 +80,7 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 	}
 	
 	if (pImportDesc->Name == 0) {
-		Error(L"pImportDesc->Name == 0", L"This module doesn't import any functions from this callee.", 0, TEXT(__FILE__), __LINE__);
+		Log("This module does not use ExitWindowsEx(), it does not import any functions from user32.dll.");
 		return 1;
 	}
 
@@ -81,41 +91,45 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 	for (; pThunk->u1.Function; pThunk++) {
 		// Get the address of the function address.
 		PROC* ppfn = (PROC*)&pThunk->u1.Function;
-
+	
 		if (*ppfn == pfnCurrent) {
 			//The function pointers match
+			
+			//MessageBox(NULL, APP_NAME " patch.dll", "Press OK to patch.", MB_OK);
 			
 			//Replace function pointer
 			WriteProcessMemory(GetCurrentProcess(), ppfn, &pfnNew, sizeof(pfnNew), NULL);
 
 			//We did it; get out.
-			#ifdef DEBUG
-			MessageBox(NULL, L"Patching was successful", APP_NAME, MB_ICONINFORMATION|MB_OK);
-			#endif
+			Log("Patching was successful");
 			return 0;
 		}
 	}
 
-	Error(L"Patching was NOT successful", L"The function is not in the caller's import section.", 0, TEXT(__FILE__), __LINE__);
+	Log("This module does not use ExitWindowsEx(), the function is not in the caller's import section.");
 	return 1;
 }
 
 void ShutdownBlocked(UINT uFlags, DWORD dwReason) {
+	sprintf(txt, "ShutdownBlocked(%d,%d)", uFlags, dwReason);
+	Log(txt);
 	HWND wnd = FindWindow(APP_NAME,NULL);
 	PostMessage(wnd, WM_SHUTDOWNBLOCKED, uFlags, dwReason);
 }
 
 BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD reason, LPVOID reserved) {
 	if (reason == DLL_PROCESS_ATTACH) {
-		WM_SHUTDOWNBLOCKED = RegisterWindowMessage(L"ShutdownBlocked");
+		Log("Now in DLL_PROCESS_ATTACH");
+		
+		WM_SHUTDOWNBLOCKED = RegisterWindowMessage("ShutdownBlocked");
 		app = GetModuleHandle(NULL);
 		//Get address to ExitWindowsEx()
-		HMODULE user32 = LoadLibrary(L"user32.dll");
+		HMODULE user32 = LoadLibrary("user32.dll");
 		fnExitWindowsEx = (PROC)GetProcAddress(user32,"ExitWindowsEx");
 		FreeLibrary(user32);
 		//Patch IAT
 		if (PatchIAT("user32.dll",fnExitWindowsEx,(PROC)ShutdownBlocked, app) == 0) {
-			patched=1;
+			patched = 1;
 		}
 		else {
 			return FALSE;

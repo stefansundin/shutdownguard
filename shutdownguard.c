@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#define _WIN32_WINNT 0x0501
 #define _WIN32_IE 0x0600
 #include <windows.h>
 #include <shlwapi.h>
@@ -101,6 +102,9 @@ int enabled = 1;
 int vista = 0;
 HWND hwnd = NULL;
 HWND helpbutton = NULL;
+
+//Patch
+HMODULE WINAPI (*pfnLoadLibrary)(LPCTSTR) = NULL;
 
 //Error() and CheckForUpdate()
 #include "include/error.h"
@@ -266,7 +270,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		CheckForUpdate();
 	}
 	
-	//Patch the IAT table of this process (proof-of-concept)
+	//Patch
 	if (settings.PatchApps) {
 		PatchApps();
 	}
@@ -281,11 +285,12 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 }
 
 int PatchApps() {
+	//We load the dll with ANSI functions
 	//Get path to patch.dll
-	char path[MAX_PATH];
-	GetModuleFileNameA(NULL, path, sizeof(path));
-	PathRemoveFileSpecA(path);
-	strcat(path, "\\patch.dll");
+	char dll[MAX_PATH];
+	GetModuleFileNameA(NULL, dll, sizeof(dll));
+	PathRemoveFileSpecA(dll);
+	strcat(dll, "\\patch.dll");
 	
 	//Get SeDebugPrivilege so we can access all processes
 	int SeDebugPrivilege = 0;
@@ -317,7 +322,6 @@ int PatchApps() {
 	
 	//Get address to LoadLibrary
 	HMODULE kernel32 = GetModuleHandle(L"kernel32.dll");
-	HMODULE WINAPI (*pfnLoadLibrary)(LPCTSTR) = NULL;
 	pfnLoadLibrary = (PVOID)GetProcAddress(kernel32,"LoadLibraryA");
 	if (pfnLoadLibrary == NULL) {
 		Error(L"GetProcAddress('LoadLibraryA')", L"Failed to load LoadLibrary().", GetLastError(), TEXT(__FILE__), __LINE__);
@@ -329,16 +333,16 @@ int PatchApps() {
 	MessageBox(NULL, txt, APP_NAME, MB_ICONINFORMATION|MB_OK);
 	*/
 	
-	//Load QueryFullProcessImageName
-	BOOL WINAPI (*QueryFullProcessImageName)(HANDLE, DWORD, LPTSTR, PDWORD) = NULL;
+	//Load QueryFullProcessImageName (requires Vista)
+	/*BOOL WINAPI (*QueryFullProcessImageName)(HANDLE, DWORD, LPTSTR, PDWORD) = NULL;
 	QueryFullProcessImageName = GetProcAddress(kernel32,"QueryFullProcessImageNameW");
 	if (QueryFullProcessImageName == NULL) {
 		Error(L"GetProcAddress('QueryFullProcessImageName')", L"Failed to load QueryFullProcessImageName().", GetLastError(), TEXT(__FILE__), __LINE__);
 		return 1;
-	}
+	}*/
 	
 	//Enumerate processes
-	DWORD pids[1024], cbNeeded;
+	DWORD pids[1024], cbNeeded=0;
 	if (EnumProcesses(pids,sizeof(pids),&cbNeeded) == 0) {
 		Error(L"EnumProcesses()", L"Could not enumerate processes. PatchApps() failed.", GetLastError(), TEXT(__FILE__), __LINE__);
 		return 1;
@@ -348,61 +352,54 @@ int PatchApps() {
 	int num = cbNeeded/sizeof(DWORD);
 	int i;
 	for (i=0; i < num; i++) {
-		if (pids[i] == 0) {
-			continue;
-		}
+		DWORD pid = pids[i];
 		HANDLE process;
-		//Really do this?
-		process=OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pids[i]);
-		if (process == NULL) {
-			wchar_t txt2[MAX_PATH];
-			wsprintf(txt2, L"Could not open process.\npid: %d", pids[i]);
-			Error(L"OpenProcess(PROCESS_QUERY_INFORMATION)", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		if (pid == 0) {
+			//"System Idle Process"
 			continue;
 		}
-		DWORD len = MAX_PATH;
-		if (QueryFullProcessImageName(process,0,txt,&len) == 0) {
-			Error(L"QueryFullProcessImageName()", L"Could not get path of process.", GetLastError(), TEXT(__FILE__), __LINE__);
+		//Get path to pid, if possible
+		if (pid < 10) {
+			//pid 4 on XP and later, pid 8 on Win2K, and pid 2 on NT 4
+			wsprintf(txt, L"System process (pid %d)", pid);
 		}
-		CloseHandle(process);
-		
-		int response = MessageBox(NULL,txt,APP_NAME,MB_ICONQUESTION|MB_YESNO);
-		if (response == IDYES) {
-			//Open process
-			//process = OpenProcess(PROCESS_ALL_ACCESS,TRUE,pids[i]);
-			process = OpenProcess(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ,TRUE,pids[i]);
+		else {
+			process = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,pid); //PROCESS_VM_READ for GetModuleFileNameEx()
 			if (process == NULL) {
-				wchar_t txt2[100];
-				wsprintf(txt2, L"Could not open process.\npid: %d", pids[i]);
-				Error(L"OpenProcess()", txt2 /*L"Could not open process."*/, GetLastError(), TEXT(__FILE__), __LINE__);
+				wchar_t txt2[MAX_PATH];
+				wsprintf(txt2, L"Could not open process. pid: %d.", pid);
+				Error(L"OpenProcess(PROCESS_QUERY_INFORMATION)", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
 				continue;
 			}
-			
-			//Write dll path to process memory
-			PVOID memory = VirtualAllocEx(process,NULL,strlen(path)+1,MEM_COMMIT,PAGE_READWRITE);
-			if (memory == NULL) {
-				Error(L"VirtualAllocEx()", L"Could not allocate memory in process.", GetLastError(), TEXT(__FILE__), __LINE__);
-				CloseHandle(process);
-				continue;
+			DWORD len = MAX_PATH;
+			//if (GetModuleFileNameEx(process,NULL,txt,MAX_PATH) == 0) {
+			//if (QueryFullProcessImageName(process,0,txt,&len) == 0) {
+			if (GetProcessImageFileName(process,txt,MAX_PATH) == 0) {
+				wsprintf(txt, L"Could not get path of process. pid: %d.", pid);
 			}
-			if (WriteProcessMemory(process,memory,path,strlen(path)+1,NULL) == 0) {
-				Error(L"WriteProcessMemory()", L"Could not write memory to process.", GetLastError(), TEXT(__FILE__), __LINE__);
-				CloseHandle(process);
-				continue;
-			}
-			
-			//Inject dll
-			if (CreateRemoteThread(process,NULL,0,(LPTHREAD_START_ROUTINE)pfnLoadLibrary,memory,0,NULL) == NULL) {
-				Error(L"CreateRemoteThread()", L"Could not create remote thread.", GetLastError(), TEXT(__FILE__), __LINE__);
-				CloseHandle(process);
-			}
-			
-			//Free memory
-			//VirtualFreeEx(process, memory, strlen(path)+1, MEM_RELEASE);
-			
-			//Close process
 			CloseHandle(process);
+			
+			PathStripPath(txt);
+			if (!wcscmp(txt,L"csrss.exe")) {
+				wcscat(txt, L"\nNote: patching csrss.exe will probably crash your computer.");
+			}
+			else if (!wcscmp(txt,L"ShutdownGuard.exe")) {
+				wcscat(txt, L"\nWhy would you want to patch ShutdownGuard? :)");
+			}
 		}
+		
+		//Ask the user
+		int response = IDCANCEL;
+		response = MessageBox(NULL,txt,L"Patch?",MB_ICONQUESTION|MB_YESNOCANCEL);
+		if (response == IDNO) {
+			continue;
+		}
+		else if (response == IDCANCEL) {
+			break;
+		}
+		
+		//Inject the dll
+		InjectDLL(pid, dll);
 	}
 	
 	//Disable SeDebugPrivilege
@@ -410,6 +407,45 @@ int PatchApps() {
 		tkp.Privileges[0].Attributes = 0;
 		AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0);
 	}
+}
+
+int InjectDLL(DWORD pid, char *dll) {
+	//Open process
+	//HANDLE process = OpenProcess(PROCESS_ALL_ACCESS,TRUE,pid);
+	HANDLE process = OpenProcess(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ,TRUE,pid);
+	if (process == NULL) {
+		wchar_t txt2[100];
+		wsprintf(txt2, L"Could not open process. pid: %d", pid);
+		Error(L"OpenProcess()", txt2 /*L"Could not open process."*/, GetLastError(), TEXT(__FILE__), __LINE__);
+		return 1;
+	}
+	
+	//Write dll path to process memory
+	PVOID memory = VirtualAllocEx(process,NULL,strlen(dll)+1,MEM_COMMIT,PAGE_READWRITE);
+	if (memory == NULL) {
+		Error(L"VirtualAllocEx()", L"Could not allocate memory in process.", GetLastError(), TEXT(__FILE__), __LINE__);
+		CloseHandle(process);
+		return 1;
+	}
+	if (WriteProcessMemory(process,memory,dll,strlen(dll)+1,NULL) == 0) {
+		Error(L"WriteProcessMemory()", L"Could not write dll path to process memory.", GetLastError(), TEXT(__FILE__), __LINE__);
+		CloseHandle(process);
+		return 1;
+	}
+	
+	//Inject dll
+	if (CreateRemoteThread(process,NULL,0,(LPTHREAD_START_ROUTINE)pfnLoadLibrary,memory,0,NULL) == NULL) {
+		Error(L"CreateRemoteThread()", L"Could not inject the dll.", GetLastError(), TEXT(__FILE__), __LINE__);
+		CloseHandle(process);
+	}
+	
+	//Free memory
+	//VirtualFreeEx(process, memory, strlen(dll)+1, MEM_RELEASE);
+	
+	//Close process
+	CloseHandle(process);
+	
+	return 0;
 }
 
 void ShowContextMenu(HWND hwnd) {
@@ -740,6 +776,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				tkp.Privileges[0].Attributes = 0;
 				AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, NULL, 0);
 			}
+			ShowWindow(hwnd, SW_HIDE);
 		}
 		else if (wmId == IDCANCEL) {
 			ShowWindow(hwnd, SW_HIDE);
