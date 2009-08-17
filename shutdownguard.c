@@ -37,6 +37,7 @@
 #define SWM_UPDATE             WM_APP+8
 #define SWM_ABOUT              WM_APP+9
 #define SWM_EXIT               WM_APP+10
+#define PATCHTIMER             WM_APP+11
 
 //Stuff missing in MinGW
 #define NIIF_USER 4
@@ -102,6 +103,7 @@ int enabled = 1;
 int vista = 0;
 HWND hwnd = NULL;
 HWND helpbutton = NULL;
+#define PATCHINTERVAL 5000
 
 //Patch
 HMODULE WINAPI (*pfnLoadLibrary)(LPCTSTR) = NULL;
@@ -273,6 +275,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	//Patch
 	if (settings.PatchApps) {
 		PatchApps();
+		SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
 	}
 	
 	//Message loop
@@ -333,14 +336,6 @@ int PatchApps() {
 	MessageBox(NULL, txt, APP_NAME, MB_ICONINFORMATION|MB_OK);
 	*/
 	
-	//Load QueryFullProcessImageName (requires Vista)
-	/*BOOL WINAPI (*QueryFullProcessImageName)(HANDLE, DWORD, LPTSTR, PDWORD) = NULL;
-	QueryFullProcessImageName = GetProcAddress(kernel32,"QueryFullProcessImageNameW");
-	if (QueryFullProcessImageName == NULL) {
-		Error(L"GetProcAddress('QueryFullProcessImageName')", L"Failed to load QueryFullProcessImageName().", GetLastError(), TEXT(__FILE__), __LINE__);
-		return 1;
-	}*/
-	
 	//Enumerate processes
 	DWORD pids[1024], cbNeeded=0;
 	if (EnumProcesses(pids,sizeof(pids),&cbNeeded) == 0) {
@@ -354,49 +349,82 @@ int PatchApps() {
 	for (i=0; i < num; i++) {
 		DWORD pid = pids[i];
 		HANDLE process;
-		if (pid == 0) {
-			//"System Idle Process"
+		
+		//Check if we really want to patch this process
+		//Bail if we have already patched it before or if it is a crucial system process
+		if (pid < 10) {
+			//"System Idle Process": pid 0
+			//System process, pid 4 on XP and later, pid 8 on Win2K, and pid 2 on NT4
 			continue;
 		}
-		//Get path to pid, if possible
-		if (pid < 10) {
-			//pid 4 on XP and later, pid 8 on Win2K, and pid 2 on NT 4
-			wsprintf(txt, L"System process (pid %d)", pid);
+		
+		//Open process
+		process = OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ,FALSE,pid);
+		if (process == NULL) {
+			wchar_t txt2[MAX_PATH];
+			wsprintf(txt2, L"Could not open process. pid: %d.", pid);
+			Error(L"OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ)", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+			continue;
 		}
-		else {
-			process = OpenProcess(PROCESS_QUERY_INFORMATION,FALSE,pid); //PROCESS_VM_READ for GetModuleFileNameEx()
-			if (process == NULL) {
-				wchar_t txt2[MAX_PATH];
-				wsprintf(txt2, L"Could not open process. pid: %d.", pid);
-				Error(L"OpenProcess(PROCESS_QUERY_INFORMATION)", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
-				continue;
-			}
-			DWORD len = MAX_PATH;
-			//if (GetModuleFileNameEx(process,NULL,txt,MAX_PATH) == 0) {
-			//if (QueryFullProcessImageName(process,0,txt,&len) == 0) {
-			if (GetProcessImageFileName(process,txt,MAX_PATH) == 0) {
-				wsprintf(txt, L"Could not get path of process. pid: %d.", pid);
-			}
-			CloseHandle(process);
-			
+		
+		//Get path of executable
+		if (GetModuleFileNameEx(process,NULL,txt,MAX_PATH) != 0) {
 			PathStripPath(txt);
-			if (!wcscmp(txt,L"csrss.exe")) {
-				wcscat(txt, L"\nNote: patching csrss.exe will probably crash your computer.");
-			}
-			else if (!wcscmp(txt,L"ShutdownGuard.exe")) {
-				wcscat(txt, L"\nWhy would you want to patch ShutdownGuard? :)");
+			if (!wcscmp(txt,L"smss.exe") || !wcscmp(txt,L"csrss.exe") || !wcscmp(txt,L"ShutdownGuard.exe")) {
+				//Don't even try it
+				//Patching csrss.exe will crash the computer
+				//Patching smss.exe fails
+				//We don't want to patch ourselves
+				CloseHandle(process);
+				continue;
 			}
 		}
 		
+		//Enumerate modules to check if this process has already been patched
+		HMODULE modules[1024];
+		if (EnumProcessModules(process,modules,sizeof(modules),&cbNeeded) == 0) {
+			wchar_t txt2[MAX_PATH];
+			wsprintf(txt2, L"Could not enumerate modules. pid: %d.", pid);
+			Error(L"EnumProcessModules()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		}
+		
+		//Loop modules
+		int alreadyloaded = 0;
+		int j;
+		int nummodules = cbNeeded/sizeof(HMODULE);
+		for (j=0; j < nummodules; j++) {
+			char modname[MAX_PATH];
+			if (GetModuleFileNameExA(process,modules[j],modname,sizeof(modname)) == 0) {
+				wchar_t txt2[MAX_PATH];
+				wsprintf(txt2, L"Could not get module filename. pid: %d, module %d.", pid, j);
+				Error(L"GetModuleFileNameExA()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+				//If one fails, all usually fails... bail out
+				break;
+			}
+			//patch.dll already loaded?
+			if (!strcmp(modname,dll)) {
+				alreadyloaded = 1;
+				break;
+			}
+		}
+		
+		//Close process
+		CloseHandle(process);
+		
+		//Already loaded
+		if (alreadyloaded) {
+			continue;
+		}
+		
 		//Ask the user
-		int response = IDCANCEL;
+		/*int response = IDCANCEL;
 		response = MessageBox(NULL,txt,L"Patch?",MB_ICONQUESTION|MB_YESNOCANCEL);
 		if (response == IDNO) {
 			continue;
 		}
 		else if (response == IDCANCEL) {
 			break;
-		}
+		}*/
 		
 		//Inject the dll
 		InjectDLL(pid, dll);
@@ -591,6 +619,10 @@ void ToggleState() {
 	if (enabled) {
 		SendMessage(traydata.hWnd, WM_UPDATESETTINGS, 0, 0);
 	}
+	else {
+		KillTimer(hwnd, PATCHTIMER);
+		//TODO: Make all previously patched programs unpatch themselves.
+	}
 }
 
 //Shutdown dialog
@@ -680,6 +712,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		if (wcslen(txt) != 0 && (!wcsncmp(txt,L"http://",7) || !wcsncmp(txt,L"https://",8))) {
 			settings.HelpUrl = malloc((wcslen(txt)+1)*sizeof(wchar_t));
 			wcscpy(settings.HelpUrl, txt);
+		}
+		//PatchApps
+		GetPrivateProfileString(APP_NAME, L"PatchApps", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
+		swscanf(txt, L"%d", &settings.PatchApps);
+		if (settings.PatchApps) {
+			PatchApps();
+			SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
 		}
 		//Silent
 		GetPrivateProfileString(APP_NAME, L"Silent", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
@@ -823,6 +862,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			}
 			return TRUE;
 		}
+	}
+	else if (msg == WM_TIMER && enabled) {
+		//KillTimer(hwnd, PATCHTIMER);
+		PatchApps();
+		//SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }

@@ -67,7 +67,7 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 	FreeLibrary(dbghelp);
 	
 	if (pImportDesc == NULL) {
-		Log("This module has no import section.");
+		//This module has no import section
 		return 1;
 	}
 	
@@ -80,18 +80,18 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 	}
 	
 	if (pImportDesc->Name == 0) {
-		Log("This module does not use ExitWindowsEx(), it does not import any functions from user32.dll.");
+		//This module does not use ExitWindowsEx(), it does not import any functions from user32.dll
 		return 1;
 	}
-
+	
 	//Get the import address table (IAT)
 	PIMAGE_THUNK_DATA pThunk = (PIMAGE_THUNK_DATA)((PBYTE) hmodCaller + pImportDesc->FirstThunk);
-
+	
 	//Loop through all functions
 	for (; pThunk->u1.Function; pThunk++) {
 		// Get the address of the function address.
 		PROC* ppfn = (PROC*)&pThunk->u1.Function;
-	
+		
 		if (*ppfn == pfnCurrent) {
 			//The function pointers match
 			
@@ -99,20 +99,22 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 			
 			//Replace function pointer
 			WriteProcessMemory(GetCurrentProcess(), ppfn, &pfnNew, sizeof(pfnNew), NULL);
-
+			
 			//We did it; get out.
 			Log("Patching was successful");
 			return 0;
 		}
 	}
-
-	Log("This module does not use ExitWindowsEx(), the function is not in the caller's import section.");
+	
+	//This module does not use ExitWindowsEx(), the function is not in the caller's import section
 	return 1;
 }
 
 void ShutdownBlocked(UINT uFlags, DWORD dwReason) {
 	sprintf(txt, "ShutdownBlocked(%d,%d)", uFlags, dwReason);
 	Log(txt);
+	//This only works for desktop applications, and not services or system processes
+	//Need to find a way to notify ShutdownGuard.exe when patching a system/service process!
 	HWND wnd = FindWindow(APP_NAME,NULL);
 	PostMessage(wnd, WM_SHUTDOWNBLOCKED, uFlags, dwReason);
 }
@@ -128,7 +130,7 @@ BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD reason, LPVOID reserved) {
 		fnExitWindowsEx = (PROC)GetProcAddress(user32,"ExitWindowsEx");
 		FreeLibrary(user32);
 		//Patch IAT
-		if (PatchIAT("user32.dll",fnExitWindowsEx,(PROC)ShutdownBlocked, app) == 0) {
+		if (PatchIAT("user32.dll",fnExitWindowsEx,(PROC)ShutdownBlocked,app) == 0) {
 			patched = 1;
 		}
 		else {
