@@ -17,12 +17,21 @@ Envía comentarios a recover89@gmail.com
 Si consideras que este programa es útil, puedes realizar un donativo.
 En mi web hay más información acerca de cómo realizar un donativo.
 
+ShutdownGuard es un programa de código abierto bajo licencia GPL.
+
 Historial de cambios
 --------------------
+0.4:
+
+
+
+
+El idioma puede cambiarse en el fichero ShutdownGuard.ini.
+
 0.3 - 2008-12-25:
-Arreglado un problema de aparición de la nota emergente
-Arreglado el problema del icono de notificación que no reaparecía al reiniciar Explorer
-Añadido comprobador de actualizaciones
+Arreglado un problema de aparición de la nota emergente.
+Arreglado el problema del icono de notificación que no reaparecía al reiniciar Explorer.
+Añadido comprobador de actualizaciones.
 
 0.2 - 2008-11-14:
 Compatible con Vista.
