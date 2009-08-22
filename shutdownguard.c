@@ -435,7 +435,7 @@ int PatchApps(int unpatch) {
 		}
 		else {
 			for (j=0; j < settings.PatchList.numitems; j++) {
-				if (!wcscmp(txt,settings.PatchList.items[j])) {
+				if (!wcsicmp(txt,settings.PatchList.items[j])) {
 					patch = 1;
 					break;
 				}
@@ -830,6 +830,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			settings.Prevent = malloc((wcslen(txt)+1)*sizeof(wchar_t));
 			wcscpy(settings.Prevent, txt);
 		}
+		//Silent
+		GetPrivateProfileString(APP_NAME, L"Silent", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
+		swscanf(txt, L"%d", &settings.Silent);
 		//HelpUrl
 		if (settings.HelpUrl != NULL) {
 			free(settings.HelpUrl);
@@ -847,9 +850,42 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			PatchApps(0);
 			SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
 		}
-		//Silent
-		GetPrivateProfileString(APP_NAME, L"Silent", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
-		swscanf(txt, L"%d", &settings.Silent);
+		//PatchList
+		if (settings.PatchList.numitems > 0) {
+			for (i=0; i < settings.PatchList.numitems; i++) {
+				free(settings.PatchList.items[i]);
+			}
+			free(settings.PatchList.items);
+			settings.PatchList.numitems = 0;
+		}
+		GetPrivateProfileString(APP_NAME, L"PatchList", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
+		int patchlist_alloc = 0;
+		wchar_t *pos = txt;
+		while (pos != NULL) {
+			wchar_t *program = pos;
+			//Move pos to next item (if any)
+			pos = wcsstr(pos,L"|");
+			if (pos != NULL) {
+				*pos = '\0';
+				pos++;
+			}
+			//Skip this item if it's empty
+			if (wcslen(program) == 0) {
+				continue;
+			}
+			//Allocate memory and copy over text
+			wchar_t *item;
+			item = malloc((wcslen(program)+1)*sizeof(wchar_t));
+			wcscpy(item, program);
+			//Make sure we have enough space
+			if (settings.PatchList.numitems == patchlist_alloc) {
+				patchlist_alloc += 10;
+				settings.PatchList.items = realloc(settings.PatchList.items,patchlist_alloc*sizeof(wchar_t*));
+			}
+			//Store item
+			settings.PatchList.items[settings.PatchList.numitems] = item;
+			settings.PatchList.numitems++;
+		}
 	}
 	else if (msg == WM_ADDTRAY && (!settings.Silent || GetAsyncKeyState(VK_SHIFT)&0x8000)) {
 		hide = 0;
