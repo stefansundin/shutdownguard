@@ -24,7 +24,7 @@ struct strings gl_ES = {
  /* prevent */           L"Evitado apagado de Windows.",
  /* balloon */           L"Preme aquí para continuar co apagado.",
  /* shutdown_ask */      L"Que queres facer?",
- /* shutdown_logoff */   L"Pechar a sesión",
+ /* shutdown_logoff */   L"Pechar Sesión",
  /* shutdown_shutdown */ L"Apagar",
  /* shutdown_reboot */   L"Reiniciar",
  /* shutdown_nothing */  L"Nada",
