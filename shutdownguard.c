@@ -88,13 +88,18 @@ UINT WM_ADDTRAY = 0;
 UINT WM_HIDETRAY = 0;
 int tray_added = 0;
 int hide = 0;
+struct patchlist {
+	wchar_t **items;
+	int numitems;
+};
 struct {
 	wchar_t *Prevent;
 	int Silent;
 	wchar_t *HelpUrl;
 	int PatchApps;
+	struct patchlist PatchList;
 	int CheckForUpdate;
-} settings = {NULL,0,NULL,0,0};
+} settings = {NULL,0,NULL,0,{NULL,0},0};
 wchar_t txt[1000];
 
 //Cool stuff
@@ -169,6 +174,35 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	//PatchApps
 	GetPrivateProfileString(APP_NAME, L"PatchApps", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
 	swscanf(txt, L"%d", &settings.PatchApps);
+	//PatchList
+	GetPrivateProfileString(APP_NAME, L"PatchList", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
+	int patchlist_alloc = 0;
+	wchar_t *pos = txt;
+	while (pos != NULL) {
+		wchar_t *program = pos;
+		//Move pos to next item (if any)
+		pos = wcsstr(pos,L"|");
+		if (pos != NULL) {
+			*pos = '\0';
+			pos++;
+		}
+		//Skip this item if it's empty
+		if (wcslen(program) == 0) {
+			continue;
+		}
+		//Allocate memory for item
+		wchar_t *item;
+		item = malloc((wcslen(program)+1)*sizeof(wchar_t));
+		wcscpy(item, program);
+		//Make sure we have enough space
+		if (settings.PatchList.numitems == patchlist_alloc) {
+			patchlist_alloc += 10;
+			settings.PatchList.items = realloc(settings.PatchList.items,patchlist_alloc*sizeof(wchar_t*));
+		}
+		//Store item
+		settings.PatchList.items[settings.PatchList.numitems] = item;
+		settings.PatchList.numitems++;
+	}
 	//Update
 	GetPrivateProfileString(L"Update", L"CheckForUpdate", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
 	swscanf(txt, L"%d", &settings.CheckForUpdate);
@@ -353,7 +387,7 @@ int PatchApps() {
 		//Bail if we have already patched it before or if it is a crucial system process
 		if (pid < 10) {
 			//"System Idle Process": pid 0
-			//System process, pid 4 on XP and later, pid 8 on Win2K, and pid 2 on NT4
+			//"System" process, pid 4 on XP and later, pid 8 on Win2K, and pid 2 on NT4
 			continue;
 		}
 		
@@ -379,6 +413,26 @@ int PatchApps() {
 			}
 		}
 		
+		//Check if this process is on the PatchList
+		int patch = 0;
+		int j;
+		if (settings.PatchList.numitems == 0) {
+			patch = 1;
+		}
+		else {
+			for (j=0; j < settings.PatchList.numitems; j++) {
+				if (!wcscmp(txt,settings.PatchList.items[j])) {
+					patch = 1;
+					break;
+				}
+			}
+		}
+		
+		if (!patch) {
+			CloseHandle(process);
+			continue;
+		}
+		
 		//Enumerate modules to check if this process has already been patched
 		HMODULE modules[1024];
 		if (EnumProcessModules(process,modules,sizeof(modules),&cbNeeded) == 0) {
@@ -388,8 +442,6 @@ int PatchApps() {
 		}
 		
 		//Loop modules
-		int alreadyloaded = 0;
-		int j;
 		int nummodules = cbNeeded/sizeof(HMODULE);
 		for (j=0; j < nummodules; j++) {
 			char modname[MAX_PATH];
@@ -402,7 +454,7 @@ int PatchApps() {
 			}
 			//patch.dll already loaded?
 			if (!strcmp(modname,dll)) {
-				alreadyloaded = 1;
+				patch = 0;
 				break;
 			}
 		}
@@ -411,7 +463,7 @@ int PatchApps() {
 		CloseHandle(process);
 		
 		//Already loaded
-		if (alreadyloaded) {
+		if (!patch) {
 			continue;
 		}
 		
@@ -443,26 +495,32 @@ int InjectDLL(DWORD pid, char *dll) {
 	if (process == NULL) {
 		wchar_t txt2[100];
 		wsprintf(txt2, L"Could not open process. pid: %d", pid);
-		Error(L"OpenProcess()", txt2 /*L"Could not open process."*/, GetLastError(), TEXT(__FILE__), __LINE__);
+		Error(L"OpenProcess()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
 		return 1;
 	}
 	
 	//Write dll path to process memory
 	PVOID memory = VirtualAllocEx(process,NULL,strlen(dll)+1,MEM_COMMIT,PAGE_READWRITE);
 	if (memory == NULL) {
-		Error(L"VirtualAllocEx()", L"Could not allocate memory in process.", GetLastError(), TEXT(__FILE__), __LINE__);
+		wchar_t txt2[MAX_PATH];
+		wsprintf(txt2, L"Could not allocate memory in process. pid: %d.", pid);
+		Error(L"VirtualAllocEx()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
 		CloseHandle(process);
 		return 1;
 	}
 	if (WriteProcessMemory(process,memory,dll,strlen(dll)+1,NULL) == 0) {
-		Error(L"WriteProcessMemory()", L"Could not write dll path to process memory.", GetLastError(), TEXT(__FILE__), __LINE__);
+		wchar_t txt2[MAX_PATH];
+		wsprintf(txt2, L"Could not write dll path to process memory. pid: %d.", pid);
+		Error(L"WriteProcessMemory()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
 		CloseHandle(process);
 		return 1;
 	}
 	
 	//Inject dll
 	if (CreateRemoteThread(process,NULL,0,(LPTHREAD_START_ROUTINE)pfnLoadLibrary,memory,0,NULL) == NULL) {
-		Error(L"CreateRemoteThread()", L"Could not inject the dll.", GetLastError(), TEXT(__FILE__), __LINE__);
+		wchar_t txt2[MAX_PATH];
+		wsprintf(txt2, L"Could not inject the dll. pid: %d.", pid);
+		Error(L"CreateRemoteThread()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
 		CloseHandle(process);
 	}
 	
