@@ -17,8 +17,17 @@ Send tilbakemelding til recover89@gmail.com
 Om du tykkjer at programmet er hendig, vurder å gje ein donasjon.
 Du kan finne ut korleis du donerer på vevsida.
 
+ShutdownGuard har open kjeldekode og GPL-lisensiert.
+
 Endringslogg
 ---------
+0.4:
+La til høve til å lappe program (sjå ShutdownGuard.ini).
+La til start på nytt-knapp i avslåingsdialogen.
+La til Stille-val.
+La til HjelpURL-val
+Språk kan no endrast i ShutdownGuard.ini.
+
 0.3 - 2008-12-25:
 Fiksa problemet med sprettoppballongen ikkje spratt opp.
 Fiksa problemet med systemikonet ikkje vart lagd til om Utforskaren krasja.

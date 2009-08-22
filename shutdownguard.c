@@ -101,8 +101,7 @@ wchar_t txt[1000];
 UINT WM_SHUTDOWNBLOCKED = 0;
 int enabled = 1;
 int vista = 0;
-HWND hwnd = NULL;
-HWND helpbutton = NULL;
+HWND hwnd, hwnd_text, hwnd_logoff, hwnd_shutdown, hwnd_reboot, hwnd_nothing, hwnd_help;
 #define PATCHINTERVAL 5000
 
 //Patch
@@ -193,21 +192,21 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	
 	//Create window
 	hwnd = CreateWindowEx(WS_EX_TOPMOST, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW^WS_SIZEBOX^WS_MAXIMIZEBOX^WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 360, 126, NULL, NULL, hInst, NULL);
-	HWND text = CreateWindowEx(0, L"STATIC", l10n->shutdown_ask, WS_TABSTOP|WS_VISIBLE|WS_CHILD, 90, 22, 200, 25, hwnd, NULL, hInst, NULL);
-	HWND logoff = CreateWindowEx(0, L"BUTTON", l10n->shutdown_logoff, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 15, 60, 75, 23, hwnd, (HMENU)IDOK, hInst, NULL);
-	HWND shutdown = CreateWindowEx(0, L"BUTTON", l10n->shutdown_shutdown, BS_DEFPUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 100, 60, 75, 23, hwnd, (HMENU)IDCLOSE, hInst, NULL);
-	HWND reboot = CreateWindowEx(0, L"BUTTON", l10n->shutdown_reboot, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 185, 60, 75, 23, hwnd, (HMENU)IDRETRY, hInst, NULL);
-	HWND nothing = CreateWindowEx(0, L"BUTTON", l10n->shutdown_nothing, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 270, 60, 75, 23, hwnd, (HMENU)IDCANCEL, hInst, NULL);
-	helpbutton = CreateWindowEx(0, L"BUTTON", l10n->shutdown_help, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 355, 60, 75, 23, hwnd, (HMENU)IDHELP, hInst, NULL);
+	hwnd_text = CreateWindowEx(0, L"STATIC", l10n->shutdown_ask, WS_TABSTOP|WS_VISIBLE|WS_CHILD, 90, 22, 200, 25, hwnd, NULL, hInst, NULL);
+	hwnd_logoff = CreateWindowEx(0, L"BUTTON", l10n->shutdown_logoff, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 15, 60, 75, 23, hwnd, (HMENU)IDOK, hInst, NULL);
+	hwnd_shutdown = CreateWindowEx(0, L"BUTTON", l10n->shutdown_shutdown, BS_DEFPUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 100, 60, 75, 23, hwnd, (HMENU)IDCLOSE, hInst, NULL);
+	hwnd_reboot = CreateWindowEx(0, L"BUTTON", l10n->shutdown_reboot, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 185, 60, 75, 23, hwnd, (HMENU)IDRETRY, hInst, NULL);
+	hwnd_nothing = CreateWindowEx(0, L"BUTTON", l10n->shutdown_nothing, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 270, 60, 75, 23, hwnd, (HMENU)IDCANCEL, hInst, NULL);
+	hwnd_help = CreateWindowEx(0, L"BUTTON", l10n->shutdown_help, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 355, 60, 75, 23, hwnd, (HMENU)IDHELP, hInst, NULL);
 	
 	//Set font
 	HFONT font = CreateFont(14,0,0,0,FW_DONTCARE,FALSE,FALSE,FALSE,ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH|FF_SWISS,L"MS Sans Serif");
-	SendMessage(text, WM_SETFONT, (WPARAM)font, TRUE);
-	SendMessage(logoff, WM_SETFONT, (WPARAM)font, TRUE);
-	SendMessage(shutdown, WM_SETFONT, (WPARAM)font, TRUE);
-	SendMessage(reboot, WM_SETFONT, (WPARAM)font, TRUE);
-	SendMessage(nothing, WM_SETFONT, (WPARAM)font, TRUE);
-	SendMessage(helpbutton, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(hwnd_text, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(hwnd_logoff, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(hwnd_shutdown, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(hwnd_reboot, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(hwnd_nothing, WM_SETFONT, (WPARAM)font, TRUE);
+	SendMessage(hwnd_help, WM_SETFONT, (WPARAM)font, TRUE);
 	
 	//Load icons
 	icon[0] = LoadImage(hInst,L"tray-disabled",IMAGE_ICON,0,0,LR_DEFAULTCOLOR);
@@ -637,11 +636,11 @@ void AskShutdown() {
 	//Help button
 	if (settings.HelpUrl == NULL) {
 		MoveWindow(hwnd, 0, 0, 360, 126, FALSE);
-		ShowWindow(helpbutton, SW_HIDE);
+		ShowWindow(hwnd_help, SW_HIDE);
 	}
 	else {
 		MoveWindow(hwnd, 0, 0, 450, 126, FALSE);
-		ShowWindow(helpbutton, SW_SHOW);
+		ShowWindow(hwnd_help, SW_SHOW);
 	}
 	
 	//Show window
@@ -690,6 +689,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		for (i=0; i < num_languages; i++) {
 			if (!wcscmp(txt,languages[i].code)) {
 				l10n = languages[i].strings;
+				//Update shutdown dialog text
+				SendMessage(hwnd_text, WM_SETTEXT, 0, (LPARAM)l10n->shutdown_ask);
+				SendMessage(hwnd_logoff, WM_SETTEXT, 0, (LPARAM)l10n->shutdown_logoff);
+				SendMessage(hwnd_shutdown, WM_SETTEXT, 0, (LPARAM)l10n->shutdown_shutdown);
+				SendMessage(hwnd_reboot, WM_SETTEXT, 0, (LPARAM)l10n->shutdown_reboot);
+				SendMessage(hwnd_nothing, WM_SETTEXT, 0, (LPARAM)l10n->shutdown_nothing);
+				SendMessage(hwnd_help, WM_SETTEXT, 0, (LPARAM)l10n->shutdown_help);
 				break;
 			}
 		}

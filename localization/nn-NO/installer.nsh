@@ -8,11 +8,17 @@
 ;the Free Software Foundation, either version 3 of the License, or
 ;(at your option) any later version.
 
-!if ${L10N_VERSION} == 2
+!if ${L10N_VERSION} == 3
 
 !insertmacro MUI_LANGUAGE "NorwegianNynorsk"
 !define LANG ${LANG_NORWEGIANNYNORSK}
 
+LangString L10N_UPGRADE_TITLE     ${LANG} "Allereie Installert"
+LangString L10N_UPGRADE_SUBTITLE  ${LANG} "Vel korleis du vil installere ${APP_NAME}."
+LangString L10N_UPGRADE_HEADER    ${LANG} "${APP_NAME} er allereie installert på denne maskinen. Vel kva du vil gjere og klikk på Neste for å halde fram."
+LangString L10N_UPGRADE_UPGRADE   ${LANG} "&Oppgrader ${APP_NAME} til ${APP_VERSION}."
+LangString L10N_UPGRADE_INI       ${LANG} "Dine noverande innstillingar vert kopiert til ${APP_NAME}-old.ini."
+LangString L10N_UPGRADE_INSTALL   ${LANG} "&Intsaller til ny plassering."
 LangString L10N_UPDATE_SECTION    ${LANG} "Sjekk etter oppdateringar"
 LangString L10N_UPDATE_DIALOG     ${LANG} "Ein ny versjon er tilgjengeleg.$\nAvbryte installasjon og gå til vevsida?"
 LangString L10N_RUNNING_INSTALL   ${LANG} "${APP_NAME} køyrer. Lukke?"

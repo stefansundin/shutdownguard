@@ -23,14 +23,13 @@ if "%1" == "all" (
 		exit /b
 	)
 	strip "build\en-US\ShutdownGuard\ShutdownGuard.exe"
-	
 	gcc -o "build\en-US\ShutdownGuard\patch.dll" patch.c build\resources_patch.o -mdll
 	if not exist "build\en-US\ShutdownGuard\patch.dll" (
 		exit /b
 	)
 	strip "build\en-US\ShutdownGuard\patch.dll"
 	
-	for /D %%f in (localization\*) do (
+	for /D %%f in (localization/*) do (
 		@echo.
 		echo Putting together %%f
 		if not %%f == en-US (
