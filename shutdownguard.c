@@ -111,6 +111,7 @@ HWND hwnd, hwnd_text, hwnd_logoff, hwnd_shutdown, hwnd_reboot, hwnd_nothing, hwn
 
 //Patch
 HMODULE WINAPI (*pfnLoadLibrary)(LPCTSTR) = NULL;
+HMODULE WINAPI (*pfnFreeLibrary)(LPCTSTR) = NULL;
 
 //Error() and CheckForUpdate()
 #include "include/error.h"
@@ -190,7 +191,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		if (wcslen(program) == 0) {
 			continue;
 		}
-		//Allocate memory for item
+		//Allocate memory and copy over text
 		wchar_t *item;
 		item = malloc((wcslen(program)+1)*sizeof(wchar_t));
 		wcscpy(item, program);
@@ -320,13 +321,34 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	return msg.wParam;
 }
 
-int PatchApps() {
+int PatchApps(int unpatch) {
 	//We load the dll with ANSI functions
 	//Get path to patch.dll
 	char dll[MAX_PATH];
 	GetModuleFileNameA(NULL, dll, sizeof(dll));
 	PathRemoveFileSpecA(dll);
 	strcat(dll, "\\patch.dll");
+	
+	//Get address to LoadLibrary and FreeLibrary
+	if (pfnLoadLibrary == NULL) {
+		HMODULE kernel32 = GetModuleHandle(L"kernel32.dll");
+		pfnLoadLibrary = (PVOID)GetProcAddress(kernel32,"LoadLibraryA");
+		if (pfnLoadLibrary == NULL) {
+			Error(L"GetProcAddress('LoadLibraryA')", L"Failed to load LoadLibrary().\nPatchApps failed.", GetLastError(), TEXT(__FILE__), __LINE__);
+		}
+	}
+	if (pfnFreeLibrary == NULL) {
+		HMODULE kernel32 = GetModuleHandle(L"kernel32.dll");
+		pfnFreeLibrary = (PVOID)GetProcAddress(kernel32,"FreeLibrary");
+		if (pfnFreeLibrary == NULL) {
+			Error(L"GetProcAddress('FreeLibrary')", L"Failed to load FreeLibrary().\nPatchApps failed.", GetLastError(), TEXT(__FILE__), __LINE__);
+		}
+	}
+	if (pfnLoadLibrary == NULL || pfnFreeLibrary == NULL) {
+		settings.PatchApps = 0;
+		KillTimer(hwnd, PATCHTIMER);
+		return 1;
+	}
 	
 	//Get SeDebugPrivilege so we can access all processes
 	int SeDebugPrivilege = 0;
@@ -335,7 +357,7 @@ int PatchApps() {
 	TOKEN_PRIVILEGES tkp;
 	if (OpenProcessToken(GetCurrentProcess(),TOKEN_ADJUST_PRIVILEGES|TOKEN_QUERY,&hToken) == 0) {
 		#ifdef DEBUG
-		Error(L"OpenProcessToken()", L"PatchApps()", GetLastError(), TEXT(__FILE__), __LINE__);
+		Error(L"OpenProcessToken()", L"Could not get SeDebugPrivilege.\nPatchApps might not be able to patch some processes.\nYou might want to try running ShutdownGuard as admin.", GetLastError(), TEXT(__FILE__), __LINE__);
 		#endif
 	}
 	else {
@@ -347,7 +369,7 @@ int PatchApps() {
 		//Enable SeDebugPrivilege
 		if (AdjustTokenPrivileges(hToken,FALSE,&tkp,0,NULL,0) == 0 || GetLastError() != ERROR_SUCCESS) {
 			#ifdef DEBUG
-			Error(L"AdjustTokenPrivileges()", L"PatchApps()", GetLastError(), TEXT(__FILE__), __LINE__);
+			Error(L"AdjustTokenPrivileges()", L"Could not get SeDebugPrivilege.\nPatchApps might not be able to patch some processes.\nYou might want to try running ShutdownGuard as admin.", GetLastError(), TEXT(__FILE__), __LINE__);
 			#endif
 		}
 		else {
@@ -356,23 +378,12 @@ int PatchApps() {
 		}
 	}
 	
-	//Get address to LoadLibrary
-	HMODULE kernel32 = GetModuleHandle(L"kernel32.dll");
-	pfnLoadLibrary = (PVOID)GetProcAddress(kernel32,"LoadLibraryA");
-	if (pfnLoadLibrary == NULL) {
-		Error(L"GetProcAddress('LoadLibraryA')", L"Failed to load LoadLibrary().", GetLastError(), TEXT(__FILE__), __LINE__);
-		return 1;
-	}
-	
-	/*
-	wsprintf(txt, L"LoadLibraryA: %d\nGetProcAddress: %d\nLoadLibraryA == GetProcAddress(): %d", LoadLibraryA, GetProcAddress(kernel32,"LoadLibraryA"),(PROC)LoadLibraryA == GetProcAddress(kernel32,"LoadLibraryA"));
-	MessageBox(NULL, txt, APP_NAME, MB_ICONINFORMATION|MB_OK);
-	*/
-	
 	//Enumerate processes
 	DWORD pids[1024], cbNeeded=0;
 	if (EnumProcesses(pids,sizeof(pids),&cbNeeded) == 0) {
-		Error(L"EnumProcesses()", L"Could not enumerate processes. PatchApps() failed.", GetLastError(), TEXT(__FILE__), __LINE__);
+		Error(L"EnumProcesses()", L"Could not enumerate processes. PatchApps failed.", GetLastError(), TEXT(__FILE__), __LINE__);
+		settings.PatchApps = 0;
+		KillTimer(hwnd, PATCHTIMER);
 		return 1;
 	}
 	
@@ -394,9 +405,11 @@ int PatchApps() {
 		//Open process
 		process = OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ,FALSE,pid);
 		if (process == NULL) {
+			#ifdef DEBUG
 			wchar_t txt2[MAX_PATH];
 			wsprintf(txt2, L"Could not open process. pid: %d.", pid);
 			Error(L"OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ)", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+			#endif
 			continue;
 		}
 		
@@ -414,9 +427,10 @@ int PatchApps() {
 		}
 		
 		//Check if this process is on the PatchList
+		//When unpatching, ignore the PatchList
 		int patch = 0;
 		int j;
-		if (settings.PatchList.numitems == 0) {
+		if (settings.PatchList.numitems == 0 || unpatch) {
 			patch = 1;
 		}
 		else {
@@ -427,7 +441,6 @@ int PatchApps() {
 				}
 			}
 		}
-		
 		if (!patch) {
 			CloseHandle(process);
 			continue;
@@ -435,25 +448,34 @@ int PatchApps() {
 		
 		//Enumerate modules to check if this process has already been patched
 		HMODULE modules[1024];
+		int nummodules = 0;
 		if (EnumProcessModules(process,modules,sizeof(modules),&cbNeeded) == 0) {
+			#ifdef DEBUG
 			wchar_t txt2[MAX_PATH];
 			wsprintf(txt2, L"Could not enumerate modules. pid: %d.", pid);
 			Error(L"EnumProcessModules()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+			#endif
+		}
+		else {
+			nummodules = cbNeeded/sizeof(HMODULE);
 		}
 		
 		//Loop modules
-		int nummodules = cbNeeded/sizeof(HMODULE);
+		HMODULE patchmod = NULL;
 		for (j=0; j < nummodules; j++) {
 			char modname[MAX_PATH];
 			if (GetModuleFileNameExA(process,modules[j],modname,sizeof(modname)) == 0) {
+				#ifdef DEBUG
 				wchar_t txt2[MAX_PATH];
 				wsprintf(txt2, L"Could not get module filename. pid: %d, module %d.", pid, j);
 				Error(L"GetModuleFileNameExA()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+				#endif
 				//If one fails, all usually fails... bail out
 				break;
 			}
 			//patch.dll already loaded?
 			if (!strcmp(modname,dll)) {
+				patchmod = modules[j];
 				patch = 0;
 				break;
 			}
@@ -462,8 +484,8 @@ int PatchApps() {
 		//Close process
 		CloseHandle(process);
 		
-		//Already loaded
-		if (!patch) {
+		//Already patched?
+		if (!patch && !unpatch) {
 			continue;
 		}
 		
@@ -477,8 +499,13 @@ int PatchApps() {
 			break;
 		}*/
 		
-		//Inject the dll
-		InjectDLL(pid, dll);
+		//Inject/Unload the dll
+		if (!unpatch) {
+			InjectDLL(pid, dll);
+		}
+		else {
+			UnloadDLL(pid, patchmod);
+		}
 	}
 	
 	//Disable SeDebugPrivilege
@@ -493,39 +520,75 @@ int InjectDLL(DWORD pid, char *dll) {
 	//HANDLE process = OpenProcess(PROCESS_ALL_ACCESS,TRUE,pid);
 	HANDLE process = OpenProcess(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ,TRUE,pid);
 	if (process == NULL) {
+		#ifdef DEBUG
 		wchar_t txt2[100];
 		wsprintf(txt2, L"Could not open process. pid: %d", pid);
 		Error(L"OpenProcess()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		#endif
 		return 1;
 	}
 	
 	//Write dll path to process memory
 	PVOID memory = VirtualAllocEx(process,NULL,strlen(dll)+1,MEM_COMMIT,PAGE_READWRITE);
 	if (memory == NULL) {
+		#ifdef DEBUG
 		wchar_t txt2[MAX_PATH];
 		wsprintf(txt2, L"Could not allocate memory in process. pid: %d.", pid);
 		Error(L"VirtualAllocEx()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		#endif
 		CloseHandle(process);
 		return 1;
 	}
 	if (WriteProcessMemory(process,memory,dll,strlen(dll)+1,NULL) == 0) {
+		#ifdef DEBUG
 		wchar_t txt2[MAX_PATH];
 		wsprintf(txt2, L"Could not write dll path to process memory. pid: %d.", pid);
 		Error(L"WriteProcessMemory()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		#endif
 		CloseHandle(process);
 		return 1;
 	}
 	
 	//Inject dll
 	if (CreateRemoteThread(process,NULL,0,(LPTHREAD_START_ROUTINE)pfnLoadLibrary,memory,0,NULL) == NULL) {
+		#ifdef DEBUG
 		wchar_t txt2[MAX_PATH];
 		wsprintf(txt2, L"Could not inject the dll. pid: %d.", pid);
 		Error(L"CreateRemoteThread()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		#endif
 		CloseHandle(process);
 	}
 	
-	//Free memory
+	//Free memory (I don't think it's safe to do it here, right now this is a memory leak)
 	//VirtualFreeEx(process, memory, strlen(dll)+1, MEM_RELEASE);
+	
+	//Close process
+	CloseHandle(process);
+	
+	return 0;
+}
+
+int UnloadDLL(DWORD pid, HMODULE patch) {
+	//Open process
+	HANDLE process = OpenProcess(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ,TRUE,pid);
+	if (process == NULL) {
+		#ifdef DEBUG
+		wchar_t txt2[100];
+		wsprintf(txt2, L"Could not open process. pid: %d", pid);
+		Error(L"OpenProcess()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		#endif
+		return 1;
+	}
+	
+	//Unload dll
+	if (CreateRemoteThread(process,NULL,0,(LPTHREAD_START_ROUTINE)pfnFreeLibrary,patch,0,NULL) == NULL) {
+		#ifdef DEBUG
+		wchar_t txt2[MAX_PATH];
+		wsprintf(txt2, L"Could not unload the dll. pid: %d.", pid);
+		Error(L"CreateRemoteThread()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		#endif
+		CloseHandle(process);
+	}
 	
 	//Close process
 	CloseHandle(process);
@@ -676,9 +739,9 @@ void ToggleState() {
 	if (enabled) {
 		SendMessage(traydata.hWnd, WM_UPDATESETTINGS, 0, 0);
 	}
-	else {
+	else if (settings.PatchApps) {
 		KillTimer(hwnd, PATCHTIMER);
-		//TODO: Make all previously patched programs unpatch themselves.
+		PatchApps(1);
 	}
 }
 
@@ -781,7 +844,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		GetPrivateProfileString(APP_NAME, L"PatchApps", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
 		swscanf(txt, L"%d", &settings.PatchApps);
 		if (settings.PatchApps) {
-			PatchApps();
+			PatchApps(0);
 			SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
 		}
 		//Silent
@@ -894,6 +957,10 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	}
 	else if (msg == WM_DESTROY) {
 		showerror = 0;
+		if (settings.PatchApps) {
+			KillTimer(hwnd, PATCHTIMER);
+			PatchApps(1);
+		}
 		RemoveTray();
 		if (user32) {
 			FreeLibrary(user32);
@@ -929,7 +996,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 	}
 	else if (msg == WM_TIMER && enabled) {
 		//KillTimer(hwnd, PATCHTIMER);
-		PatchApps();
+		PatchApps(0);
 		//SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);

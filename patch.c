@@ -121,8 +121,6 @@ void ShutdownBlocked(UINT uFlags, DWORD dwReason) {
 
 BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD reason, LPVOID reserved) {
 	if (reason == DLL_PROCESS_ATTACH) {
-		Log("Now in DLL_PROCESS_ATTACH");
-		
 		WM_SHUTDOWNBLOCKED = RegisterWindowMessage("ShutdownBlocked");
 		app = GetModuleHandle(NULL);
 		//Get address to ExitWindowsEx()
