@@ -20,6 +20,8 @@ This is also the first time I have programmed something like this, so use it at 
 
 Note that many error messages from !PatchApps will only be shown when running in debug mode (you can do that by compiling from source yourself). Therefore a patching might fail even if you don't see any error message.
 
+Since there are no API that can tell ShutdownGuard when new processes appear, ShutdownGuard will check every 5 seconds if there are any new process that needs to be patched. A process can thus spawn and issue a forced shutdown before ShutdownGuard notices it.
+
 = What happens when a shutdown is blocked? =
 
 When the ExitWindowsEx() call is intercepted, the process sends a message to ShutdownGuard.exe that the call has been blocked. ShutdownGuard then displays the usual balloon tip. The balloon tip always says that the *shutdown* has been blocked, even if the program tried to reboot or log off (this will change in a future version).
