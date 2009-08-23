@@ -1,9 +1,9 @@
 #summary Some info
 #labels Featured
 
-The idea for !ShutdownGuard came from a program I made a long time ago in Delphi, named !ShutdownGuard. This C-port is a much improved version of that. You can download the old Delphi program and its source from the [http://code.google.com/p/shutdownguard/downloads/list Downloads section].
+The idea for ShutdownGuard came from a program I made a long time ago in Delphi, named ShutdownGuard. This C-port is a much improved version of that. You can download the old Delphi program and its source from the [http://code.google.com/p/shutdownguard/downloads/list Downloads section].
 
-Note that programs are still able to shutdown Windows if they explicitly force it. Not many programs do this but you should be aware that !ShutdownGuard currently can't block these programs. I will try to make it possible to block these programs in a future version.
+Note that programs are still able to shutdown Windows if they explicitly force it. Not many programs do this but you should be aware that ShutdownGuard currently can't block these programs. I will try to make it possible to block these programs in a future version.
 
 = Balloon tips =
 
@@ -13,11 +13,11 @@ http://shutdownguard.googlecode.com/svn/wiki/ShutdownGuard.png
 
 = Vista =
 
-With Vista, Microsoft broke all programs who previously prevented shutdowns, now programs have to specify a reason as to why they want to prevent a shutdown. Release 0.2 fixed that and now you should see this dialog when !ShutdownGuard prevents a shutdown.
+With Vista, Microsoft broke all programs who previously prevented shutdowns, now programs have to specify a reason as to why they want to prevent a shutdown. Release 0.2 fixed that and now you should see this dialog when ShutdownGuard prevents a shutdown.
 
 http://shutdownguard.googlecode.com/svn/wiki/vista.png
 
-This dialog is created by Vista, not !ShutdownGuard.
+This dialog is created by Vista, not ShutdownGuard.
 
 = Privileges =
 
@@ -25,4 +25,4 @@ Applications must get the [http://msdn.microsoft.com/en-us/library/aa392758(VS.8
 
 = Limited User =
 
-I've tried running !ShutdownGuard as a limited user and in my tests it was able to prevent shutdowns, reboots, and log offs as usual. It couldn't initiate a shutdown but was able to log out.
+I've tried running ShutdownGuard as a limited user and in my tests it was able to prevent shutdowns, reboots, and log offs as usual. It couldn't initiate a shutdown but was able to log out.
