@@ -101,7 +101,6 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 			WriteProcessMemory(GetCurrentProcess(), ppfn, &pfnNew, sizeof(pfnNew), NULL);
 			
 			//We did it; get out.
-			Log("Patching was successful");
 			return 0;
 		}
 	}
@@ -114,7 +113,7 @@ void ShutdownBlocked(UINT uFlags, DWORD dwReason) {
 	sprintf(txt, "ShutdownBlocked(%d,%d)", uFlags, dwReason);
 	Log(txt);
 	//This only works for desktop applications, and not services or system processes
-	//Need to find a way to notify ShutdownGuard.exe when patching a system/service process!
+	//Need to find a way to notify ShutdownGuard.exe from a system/service process!
 	HWND wnd = FindWindow(APP_NAME,NULL);
 	PostMessage(wnd, WM_SHUTDOWNBLOCKED, uFlags, dwReason);
 }
@@ -130,6 +129,8 @@ BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD reason, LPVOID reserved) {
 		//Patch IAT
 		if (PatchIAT("user32.dll",fnExitWindowsEx,(PROC)ShutdownBlocked,app) == 0) {
 			patched = 1;
+			sprintf(txt, "Patching was successful! pid: %d", GetCurrentProcessId());
+			Log(txt);
 		}
 		else {
 			return FALSE;
@@ -137,7 +138,10 @@ BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD reason, LPVOID reserved) {
 	}
 	else if (reason == DLL_PROCESS_DETACH && patched) {
 		//Unpatch
-		PatchIAT("user32.dll", (PROC)ShutdownBlocked, fnExitWindowsEx, app);
+		if (PatchIAT("user32.dll", (PROC)ShutdownBlocked, fnExitWindowsEx, app) == 0) {
+			sprintf(txt, "Unpatching was successful! pid: %d", GetCurrentProcessId());
+			Log(txt);
+		}
 	}
 	return TRUE;
 }

@@ -17,8 +17,17 @@ Atsiliepimus siøskite recover89@gmail.com
 Jei ši programa Jums naudinga, paaukokite pinigu.
 Apie aukojima galite sužinoti tinklapyje.
 
+ShutdownGuard yra atvirojo kodo, licencijuota pagal BVL (GPL).
+
 Changelog
 ---------
+0.4:
+Added the ability to patch apps (see ShutdownGuard.ini).
+Added reboot button to the shutdown dialog.
+Added Silent option.
+Added HelpUrl option.
+Language can now be changed in ShutdownGuard.ini.
+
 0.3 - 2008-12-25:
 Fixed problem with the balloon tooltip not showing up.
 Fixed problem with tray icon not being re-added when explorer crashes.
