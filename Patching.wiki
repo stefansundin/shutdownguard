@@ -1,13 +1,13 @@
 #summary I've documented ways of patching Windows APIs here.
 
 = Note =
-This page is incomplete. I intend to post sample code and more information. I have managed to make a working example, but I need some more time to finish it. I have not released a version of !ShutdownGuard which can do this yet.
+This page is incomplete. I intend to post sample code and more information. I have managed to make a working example, but I need some more time to finish it. I have not released a version of ShutdownGuard which can do this yet.
 
 = Introduction =
 
-When developing !ShutdownGuard, I soon realized that you can't block shutdowns by responding to the [http://msdn.microsoft.com/en-us/library/aa376890%28VS.85%29.aspx WM_QUERYENDSESSION] message if the caller to the [http://msdn.microsoft.com/en-us/library/aa376868%28VS.85%29.aspx ExitWindowsEx()] function specifies the flag EWX_FORCE to force shutdown.
+When developing ShutdownGuard, I soon realized that you can't block shutdowns by responding to the [http://msdn.microsoft.com/en-us/library/aa376890%28VS.85%29.aspx WM_QUERYENDSESSION] message if the caller to the [http://msdn.microsoft.com/en-us/library/aa376868%28VS.85%29.aspx ExitWindowsEx()] function specifies the flag EWX_FORCE to force shutdown.
 To resolve this, I found out that you can redirect Windows API calls with a couple of methods. Redirecting ExitWindowsEx() would allow me to simply discard all calls, even if the force flag was specified.
-This would also make !ShutdownGuard be able to check if the system is shutting down or rebooting (WM_QUERYENDSESSION does not contain that information).
+This would also make ShutdownGuard be able to check if the system is shutting down or rebooting (WM_QUERYENDSESSION does not contain that information).
 
 After reading a bit about it, I chose to investigate two ways to redirect API calls:
   * .local dll redirect ([http://msdn.microsoft.com/en-us/library/ms682600%28VS.85%29.aspx msdn])
@@ -21,7 +21,7 @@ When you have created this file, the program will always try to load dll files f
 So after creating a .local file, you could make your own User32.dll that intercepts calls to ExitWindowsEx(), and simply forwards all other calls to the real User32.dll.
 
 The problem with this is that the User32.dll file will not be very portable (different version of User32.dll contains different declarations and functions), and you would have to put the .local file and the custom User32.dll next to *every* executable that tries to make calls to ExitWindowsEx().
-Due to this I decided that this method would be insufficient for use in !ShutdownGuard.
+Due to this I decided that this method would be insufficient for use in ShutdownGuard.
 
 = IAT patching =
 
