@@ -16,8 +16,8 @@
 
 LangString L10N_UPDATE_SECTION    ${LANG} "Ieškoti atnaujinimo"
 LangString L10N_UPDATE_DIALOG     ${LANG} "Rasta nauja versija.$\nNutraukti diegima ir eiti i tinklapi?"
-LangString L10N_RUNNING_INSTALL   ${LANG} "${APP_NAME} šiuo metu veikia. Uždaryti?"
-LangString L10N_RUNNING_UNINSTALL ${LANG} "${APP_NAME} šiuo metu veikia. Uždaryti?$\nJei pasirinksite No, ${APP_NAME} bus visiškai pašalinta tik po sistemos perkrovimo."
+LangString L10N_RUNNING           ${LANG} "${APP_NAME} šiuo metu veikia. Uždaryti?"
+LangString L10N_RUNNING_UNINSTALL ${LANG} "Jei pasirinksite No, ${APP_NAME} bus visiškai pašalinta tik po sistemos perkrovimo."
 LangString L10N_SHORTCUT          ${LANG} "Start Meniu nuoroda"
 LangString L10N_AUTOSTART         ${LANG} "Autopaleidimas"
 LangString L10N_AUTOSTART_HIDE    ${LANG} "Slepti deklo ikona"

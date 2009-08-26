@@ -17,7 +17,7 @@ struct strings en_US = {
  /* menu_hide */         L"Hide tray",
  /* menu_autostart */    L"Autostart",
  /* menu_shutdown */     L"Shutdown",
- /* menu_update */       L"Update available",
+ /* menu_update */       L"Update available!",
  /* menu_about */        L"About",
  /* menu_exit */         L"Exit",
  /* tray_enabled */      APP_NAME " (enabled)",
