@@ -27,9 +27,9 @@ struct strings es_ES = {
  /* shutdown_ask */      L"Elige una opción",
  /* shutdown_logoff */   L"Cerrar sesión",
  /* shutdown_shutdown */ L"Apagar",
- /* shutdown_reboot */   L"Reboot", //Not translated yet
+ /* shutdown_reboot */   L"Reinicio",
  /* shutdown_nothing */  L"Nada",
- /* shutdown_help */     L"Help", //Not translated yet
+ /* shutdown_help */     L"Ayuda",
  /* update_balloon */    L"¡Nueva versión disponible!",
  /* update_dialog */     L"Una nueva versión está disponible.\n¿Ir a la página de descarga?\n\n(Puedes desactivar la comprobación automática de actualizaciones editando "APP_NAME".ini)",
  /* about_title */       L"Acerca de " APP_NAME,
