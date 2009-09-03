@@ -21,7 +21,7 @@ ShutdownGuard yra atvirojo kodo, licencijuota pagal BVL (GPL).
 
 Changelog
 ---------
-0.4:
+0.4 - 2009-09-03:
 Added the ability to patch apps (see ShutdownGuard.ini).
 Added reboot button to the shutdown dialog.
 Added Silent option.
