@@ -14,6 +14,8 @@ Writing in the memory of other processes is always dangerous, so note that there
 
 This is also the first time I have programmed something like this, so use it at your own risk.
 
+I aimed to first and foremost get a working version released, and I now plan to incrementally improving it for future versions.
+
 = Proofness =
 
 *!PatchApps is not bullet-proof!* If a program *really* wants to work around this, it can do so very easily. ShutdownGuard only patches the executable, not the modules (DLLs) it has loaded.
