@@ -10,7 +10,7 @@ To resolve this, I found out that you can redirect Windows API calls with a coup
 This would also make ShutdownGuard be able to check if the system is shutting down or rebooting (WM_QUERYENDSESSION does not contain that information).
 
 After reading a bit about it, I chose to investigate two ways to redirect API calls:
-  * .local dll redirect ([http://msdn.microsoft.com/en-us/library/ms682600%28VS.85%29.aspx msdn])
+  * .local dll redirect
   * IAT patching
 
 = .local dll redirect =
