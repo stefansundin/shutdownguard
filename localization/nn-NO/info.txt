@@ -21,7 +21,7 @@ ShutdownGuard har open kjeldekode og GPL-lisensiert.
 
 Endringslogg
 ---------
-0.4 - 2009-09-03:
+0.4 - 2009-09-05:
 La til høve til å lappe program (sjå ShutdownGuard.ini).
 La til start på nytt-knapp i avslåingsdialogen.
 La til Stille-val.

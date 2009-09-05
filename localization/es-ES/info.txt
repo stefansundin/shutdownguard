@@ -21,7 +21,7 @@ ShutdownGuard es un programa de código abierto bajo licencia GPL.
 
 Historial de cambios
 --------------------
-0.4 - 2009-09-03:
+0.4 - 2009-09-05:
 Añadida la posibilidad de parchear aplicaciones (ver ShutdownGuard.ini).
 Añadido botón de reinicio al cuadro de diálogo de apagado.
 Añadida opción Silent.

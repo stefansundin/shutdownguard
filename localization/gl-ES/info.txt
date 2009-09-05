@@ -21,7 +21,7 @@ ShutdownGuard é un programa de código fonte aberto, baixo a licencia GPL.
 
 Listaxe de Cambios:
 -------------------
-0.4 - 2009-09-03:
+0.4 - 2009-09-05:
 Engadiuse o botón de reinicio.
 Engadida a opción Silent.
 Engadida a opción HelpUrl.
