@@ -1,7 +1,7 @@
 #summary I've documented ways of patching Windows APIs here.
 
 = Note =
-This page is incomplete. I intend to post sample code and more information. I have managed to make a working example, but I need some more time to finish it. I have not released a version of ShutdownGuard which can do this yet.
+This page is not finished yet, I intend to post sample code and more information.
 
 = Introduction =
 
@@ -33,8 +33,11 @@ IAT patching doesn't prevent applications from using GetProcAddress() to look up
 
 Several websites helped me accomplish this. Unfortunately sample code for the IAT patching is not widely available from Microsoft, so I almost didn't get any information from them.
 
-  * [http://www.criticalsecurity.net/index.php?showtopic=2397 Thread about IAT patching]
+  * [http://msdn.microsoft.com/en-us/library/aa375142%28VS.85%29.aspx .local redirection on MSDN]
   * [http://www.milw0rm.com/papers/105 Paper mostly about .local dll redirect]
   * [http://vx.netlux.org/29a/29a-7/Articles/29A-7.019 Hooking Windows API by Holy_Father]
   * [http://www.internals.com/articles/apispy/apispy.htm API Spying by Yariv Kaplan]
   * [http://www.codeproject.com/KB/system/hooksys.aspx Intercepting API calls on CodeProject]
+  * [http://www.codeproject.com/KB/threads/winspy.aspx Injecting dll on CodeProject]
+  * [http://www.quantumg.net/injectdll.php Code and binaries for injecting a dll]
+  * [http://www.criticalsecurity.net/index.php?showtopic=2397 Thread about IAT patching]
