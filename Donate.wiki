@@ -12,6 +12,7 @@ While I have done most of the work, here are some people who have contributed.
   * [mailto:pasmane@gmail.com p|b]: Lithuanian translation
   * [mailto:jonstodle@gmail.com Jon Stødle]: Nynorsk translation
   * [mailto:xandy.lua@gmail.com Alexander De Sousa]: Galician translation
+  * [mailto:laurens94@gmail.com Laurens van Dam]: Dutch translation
 
 Also thanks to everyone who have reported bugs.
 
