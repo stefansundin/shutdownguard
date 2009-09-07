@@ -3,6 +3,7 @@
 #include "gl-ES/strings.h"
 #include "lt-LT/strings.h"
 #include "nn-NO/strings.h"
+#include "nl-NL/strings.h"
 
 struct {
 	wchar_t *code;
@@ -13,6 +14,7 @@ struct {
 	{L"gl-ES", &gl_ES},
 	{L"lt-LT", &lt_LT},
 	{L"nn-NO", &nn_NO},
+	{L"nl-NL", &nl_NL},
 };
 
-int num_languages = 5;
+int num_languages = 6;

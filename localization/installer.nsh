@@ -3,3 +3,4 @@
 !include "localization\gl-ES\installer.nsh"
 ;!include "localization\lt-LT\installer.nsh"
 !include "localization\nn-NO\installer.nsh"
+!include "localization\nl-NL\installer.nsh"

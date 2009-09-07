@@ -196,6 +196,7 @@ Section "${APP_NAME} (${APP_VERSION})" sec_app
 	IntCmp $LANGUAGE ${LANG_GALICIAN} gl-ES
 	;IntCmp $LANGUAGE ${LANG_LITHUANIAN} lt-LT
 	IntCmp $LANGUAGE ${LANG_NORWEGIANNYNORSK} nn-NO
+	IntCmp $LANGUAGE ${LANG_DUTCH} nl-NL
 	en-US:
 		File "build\en-US\${APP_NAME}\info.txt"
 		Goto files_installed
@@ -214,6 +215,10 @@ Section "${APP_NAME} (${APP_VERSION})" sec_app
 	nn-NO:
 		File "build\nn-NO\${APP_NAME}\info.txt"
 		WriteINIStr "$INSTDIR\${APP_NAME}.ini" "${APP_NAME}" "Language" "nn-NO"
+		Goto files_installed
+	nl-NL:
+		File "build\nl-NL\${APP_NAME}\info.txt"
+		WriteINIStr "$INSTDIR\${APP_NAME}.ini" "${APP_NAME}" "Language" "nl-NL"
 		Goto files_installed
 
 	files_installed:

@@ -1,0 +1,42 @@
+ShutdownGuard
+Gemaakt door Stefan Sundin
+Translated by Laurens van Dam (laurens94@gmail.com)
+
+Voorkom het afsluiten, opnieuw opstarten of afmelden in Windows.
+Wanneer ShutdownGuard iets voorkomt, zal het in de taakbalk verschijnen en vraagt je of je verder wilt gaan.
+Klik met de middelste toets op het icoon in de taakbalk om het afsluitvenster te openen.
+
+ShutdownGuard controleert automatisch op updates.
+Je kunt dit uitschakelen in ShutdownGuard.ini.
+
+Je kan -hide als parameter gebruiken om het icoon in de taakbalk te verbergen.
+
+Bezoek de website op http://shutdownguard.googlecode.com/
+Verstuur feedback naar recover89@gmail.com
+
+Als het programma je goed helpt en je maakt er vaak gebruik van, overweeg dan alstublieft een geldbedrag te doneren.
+De uitleg over hoe je kan doneren staat op de website.
+
+ShutdownGuard is open source, gelicenseerd onder GPL.
+
+Changelog
+---------
+0.4 - 2009-09-05:
+De mogelijkheid toegevoegd om programma's te patchen (zie ShutdownGuard.ini).
+Herstart functie toegevoegd in afsluitmenu.
+Silent optie toegevoegd.
+HelpUrl optie toegevoegd.
+Taal kan nu worden veranderd in ShutdownGuard.ini.
+
+0.3 - 2008-12-25:
+Probleem opgelost met de balloon tooltip die niet verscheen.
+Probleem opgelost met het icoon in de taakbalk die niet opnieuw wordt toegevoegd wanneer verkenner crasht.
+Update controleren toegevoegd.
+
+0.2 - 2008-11-14:
+Compatibel met vista.
+Afsluit-dialoog knoppen herorganiseerd.
+Klikken met de middelste toets op het icoon in de taakbalk opent het afsluitvenster.
+
+0.1 - 2008-06-23:
+Initial release.
