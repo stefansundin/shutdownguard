@@ -4,11 +4,23 @@
 	<title>ShutdownGuard</title>
 	<link href="http://shutdownguard.googlecode.com/svn/wiki/feed.xml" rel="self" />
 	<link href="http://code.google.com/p/shutdownguard/" />
-	<updated>2009-09-05T17:00:00Z</updated>
+	<updated>2009-09-07T20:00:00Z</updated>
 	<author>
 		<name>Stefan Sundin</name>
 		<email>recover89@gmail.com</email>
 	</author>
+
+	<entry>
+		<id>urn:uuid:af384e9d-a1bb-4ae3-a931-bd624f998890</id>
+		<title>New language: Dutch</title>
+		<link href="http://code.google.com/p/shutdownguard/" />
+		<updated>2009-09-07T20:00:00Z</updated>
+		<content type="html">
+New language: Dutch by Laurens van Dam. I have released a 7z archive with the Dutch translation. The installer will not contain Dutch until the next version.&lt;br/>
+&lt;a href="http://shutdownguard.googlecode.com/files/ShutdownGuard-0.4%20%28Dutch%29.7z">&lt;img src="http://shutdownguard.googlecode.com/svn/wiki/down.png"/> Download archive&lt;/a>&lt;br/>
+&lt;a href="http://groups.google.com/group/recovers-tools">&lt;img src="http://shutdownguard.googlecode.com/svn/wiki/groups.png"/> Discuss in the forum&lt;/a> (no registration required)
+		</content>
+	</entry>
 
 	<entry>
 		<id>urn:uuid:e6d231a9-ccfb-4a55-ad35-8eaf384dcb7c</id>
