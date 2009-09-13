@@ -8,9 +8,10 @@
 	(at your option) any later version.
 */
 
+#define _WIN32_WINNT 0x0500
+
 #include <stdio.h>
 #include <stdlib.h>
-#define _WIN32_WINNT 0x0500
 #include <windows.h>
 
 //App

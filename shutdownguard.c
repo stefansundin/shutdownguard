@@ -10,11 +10,11 @@
 
 #define UNICODE
 #define _UNICODE
+#define _WIN32_WINNT 0x0501
+#define _WIN32_IE 0x0600
 
 #include <stdio.h>
 #include <stdlib.h>
-#define _WIN32_WINNT 0x0501
-#define _WIN32_IE 0x0600
 #include <windows.h>
 #include <shlwapi.h>
 #include <psapi.h>
@@ -40,13 +40,14 @@
 #define PATCHTIMER             WM_APP+11
 
 //Stuff missing in MinGW
+#ifndef NIIF_USER
 #define NIIF_USER 4
 #define NIN_BALLOONSHOW        WM_USER+2
 #define NIN_BALLOONHIDE        WM_USER+3
 #define NIN_BALLOONTIMEOUT     WM_USER+4
 #define NIN_BALLOONUSERCLICK   WM_USER+5
+#endif
 //Vista shutdown stuff
-HINSTANCE user32 = NULL;
 BOOL WINAPI (*ShutdownBlockReasonCreate)(HWND,LPCWSTR) = NULL;
 BOOL WINAPI (*ShutdownBlockReasonDestroy)(HWND) = NULL;
 
@@ -151,7 +152,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	GetPrivateProfileString(APP_NAME, L"Language", L"en-US", txt, sizeof(txt)/sizeof(wchar_t), path);
 	int i;
 	for (i=0; i < num_languages; i++) {
-		if (!wcscmp(txt,languages[i].code)) {
+		if (!wcsicmp(txt,languages[i].code)) {
 			l10n = languages[i].strings;
 			break;
 		}
@@ -168,7 +169,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	swscanf(txt, L"%d", &settings.Silent);
 	//HelpUrl
 	GetPrivateProfileString(APP_NAME, L"HelpUrl", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
-	if (wcslen(txt) != 0 && (!wcsncmp(txt,L"http://",7) || !wcsncmp(txt,L"https://",8))) {
+	if (wcslen(txt) != 0 && (!wcsnicmp(txt,L"http://",7) || !wcsnicmp(txt,L"https://",8))) {
 		settings.HelpUrl = malloc((wcslen(txt)+1)*sizeof(wchar_t));
 		wcscpy(settings.HelpUrl, txt);
 	}
@@ -176,33 +177,35 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	GetPrivateProfileString(APP_NAME, L"PatchApps", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
 	swscanf(txt, L"%d", &settings.PatchApps);
 	//PatchList
-	GetPrivateProfileString(APP_NAME, L"PatchList", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
-	int patchlist_alloc = 0;
-	wchar_t *pos = txt;
-	while (pos != NULL) {
-		wchar_t *program = pos;
-		//Move pos to next item (if any)
-		pos = wcsstr(pos,L"|");
-		if (pos != NULL) {
-			*pos = '\0';
-			pos++;
+	if (settings.PatchApps) {
+		GetPrivateProfileString(APP_NAME, L"PatchList", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
+		int patchlist_alloc = 0;
+		wchar_t *pos = txt;
+		while (pos != NULL) {
+			wchar_t *program = pos;
+			//Move pos to next item (if any)
+			pos = wcsstr(pos,L"|");
+			if (pos != NULL) {
+				*pos = '\0';
+				pos++;
+			}
+			//Skip this item if it's empty
+			if (wcslen(program) == 0) {
+				continue;
+			}
+			//Allocate memory and copy over text
+			wchar_t *item;
+			item = malloc((wcslen(program)+1)*sizeof(wchar_t));
+			wcscpy(item, program);
+			//Make sure we have enough space
+			if (settings.PatchList.numitems == patchlist_alloc) {
+				patchlist_alloc += 10;
+				settings.PatchList.items = realloc(settings.PatchList.items,patchlist_alloc*sizeof(wchar_t*));
+			}
+			//Store item
+			settings.PatchList.items[settings.PatchList.numitems] = item;
+			settings.PatchList.numitems++;
 		}
-		//Skip this item if it's empty
-		if (wcslen(program) == 0) {
-			continue;
-		}
-		//Allocate memory and copy over text
-		wchar_t *item;
-		item = malloc((wcslen(program)+1)*sizeof(wchar_t));
-		wcscpy(item, program);
-		//Make sure we have enough space
-		if (settings.PatchList.numitems == patchlist_alloc) {
-			patchlist_alloc += 10;
-			settings.PatchList.items = realloc(settings.PatchList.items,patchlist_alloc*sizeof(wchar_t*));
-		}
-		//Store item
-		settings.PatchList.items[settings.PatchList.numitems] = item;
-		settings.PatchList.numitems++;
 	}
 	//Update
 	GetPrivateProfileString(L"Update", L"CheckForUpdate", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
@@ -277,7 +280,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	GetVersionEx(&vi);
 	if (vi.dwMajorVersion >= 6) {
 		//Load user32.dll
-		user32 = LoadLibrary(L"user32.dll");
+		HINSTANCE user32 = GetModuleHandle(L"user32.dll");
 		if (user32 == NULL) {
 			Error(L"LoadLibrary('user32.dll')", L"This really shouldn't have happened.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), TEXT(__FILE__), __LINE__);
 		}
@@ -302,13 +305,11 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	}
 	
 	//Check for update
-	if (settings.CheckForUpdate) {
-		CheckForUpdate();
-	}
+	CheckForUpdate();
 	
 	//Patch
 	if (settings.PatchApps) {
-		PatchApps();
+		PatchApps(0);
 		SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
 	}
 	
@@ -406,9 +407,8 @@ int PatchApps(int unpatch) {
 		process = OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ,FALSE,pid);
 		if (process == NULL) {
 			#ifdef DEBUG
-			wchar_t txt2[MAX_PATH];
-			wsprintf(txt2, L"Could not open process. pid: %d.", pid);
-			Error(L"OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ)", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+			wsprintf(txt, L"Could not open process. pid: %d.", pid);
+			Error(L"OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ)", txt, GetLastError(), TEXT(__FILE__), __LINE__);
 			#endif
 			continue;
 		}
@@ -451,9 +451,8 @@ int PatchApps(int unpatch) {
 		int nummodules = 0;
 		if (EnumProcessModules(process,modules,sizeof(modules),&cbNeeded) == 0) {
 			#ifdef DEBUG
-			wchar_t txt2[MAX_PATH];
-			wsprintf(txt2, L"Could not enumerate modules. pid: %d.", pid);
-			Error(L"EnumProcessModules()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+			wsprintf(txt, L"Could not enumerate modules. pid: %d.", pid);
+			Error(L"EnumProcessModules()", txt, GetLastError(), TEXT(__FILE__), __LINE__);
 			#endif
 		}
 		else {
@@ -466,15 +465,14 @@ int PatchApps(int unpatch) {
 			char modname[MAX_PATH];
 			if (GetModuleFileNameExA(process,modules[j],modname,sizeof(modname)) == 0) {
 				#ifdef DEBUG
-				wchar_t txt2[MAX_PATH];
-				wsprintf(txt2, L"Could not get module filename. pid: %d, module %d.", pid, j);
-				Error(L"GetModuleFileNameExA()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+				wsprintf(txt, L"Could not get module filename. pid: %d, module %d.", pid, j);
+				Error(L"GetModuleFileNameExA()", txt, GetLastError(), TEXT(__FILE__), __LINE__);
 				#endif
 				//If one fails, all usually fails... bail out
 				break;
 			}
 			//patch.dll already loaded?
-			if (!strcmp(modname,dll)) {
+			if (!stricmp(modname,dll)) {
 				patchmod = modules[j];
 				patch = 0;
 				break;
@@ -521,9 +519,8 @@ int InjectDLL(DWORD pid, char *dll) {
 	HANDLE process = OpenProcess(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ,TRUE,pid);
 	if (process == NULL) {
 		#ifdef DEBUG
-		wchar_t txt2[100];
-		wsprintf(txt2, L"Could not open process. pid: %d", pid);
-		Error(L"OpenProcess()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		wsprintf(txt, L"Could not open process. pid: %d", pid);
+		Error(L"OpenProcess()", txt, GetLastError(), TEXT(__FILE__), __LINE__);
 		#endif
 		return 1;
 	}
@@ -532,18 +529,16 @@ int InjectDLL(DWORD pid, char *dll) {
 	PVOID memory = VirtualAllocEx(process,NULL,strlen(dll)+1,MEM_COMMIT,PAGE_READWRITE);
 	if (memory == NULL) {
 		#ifdef DEBUG
-		wchar_t txt2[MAX_PATH];
-		wsprintf(txt2, L"Could not allocate memory in process. pid: %d.", pid);
-		Error(L"VirtualAllocEx()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		wsprintf(txt, L"Could not allocate memory in process. pid: %d.", pid);
+		Error(L"VirtualAllocEx()", txt, GetLastError(), TEXT(__FILE__), __LINE__);
 		#endif
 		CloseHandle(process);
 		return 1;
 	}
 	if (WriteProcessMemory(process,memory,dll,strlen(dll)+1,NULL) == 0) {
 		#ifdef DEBUG
-		wchar_t txt2[MAX_PATH];
-		wsprintf(txt2, L"Could not write dll path to process memory. pid: %d.", pid);
-		Error(L"WriteProcessMemory()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		wsprintf(txt, L"Could not write dll path to process memory. pid: %d.", pid);
+		Error(L"WriteProcessMemory()", txt, GetLastError(), TEXT(__FILE__), __LINE__);
 		#endif
 		CloseHandle(process);
 		return 1;
@@ -552,9 +547,8 @@ int InjectDLL(DWORD pid, char *dll) {
 	//Inject dll
 	if (CreateRemoteThread(process,NULL,0,(LPTHREAD_START_ROUTINE)pfnLoadLibrary,memory,0,NULL) == NULL) {
 		#ifdef DEBUG
-		wchar_t txt2[MAX_PATH];
-		wsprintf(txt2, L"Could not inject the dll. pid: %d.", pid);
-		Error(L"CreateRemoteThread()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		wsprintf(txt, L"Could not inject the dll. pid: %d.", pid);
+		Error(L"CreateRemoteThread()", txt, GetLastError(), TEXT(__FILE__), __LINE__);
 		#endif
 		CloseHandle(process);
 	}
@@ -573,9 +567,8 @@ int UnloadDLL(DWORD pid, HMODULE patch) {
 	HANDLE process = OpenProcess(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ,TRUE,pid);
 	if (process == NULL) {
 		#ifdef DEBUG
-		wchar_t txt2[100];
-		wsprintf(txt2, L"Could not open process. pid: %d", pid);
-		Error(L"OpenProcess()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		wsprintf(txt, L"Could not open process. pid: %d", pid);
+		Error(L"OpenProcess()", txt, GetLastError(), TEXT(__FILE__), __LINE__);
 		#endif
 		return 1;
 	}
@@ -583,9 +576,8 @@ int UnloadDLL(DWORD pid, HMODULE patch) {
 	//Unload dll
 	if (CreateRemoteThread(process,NULL,0,(LPTHREAD_START_ROUTINE)pfnFreeLibrary,patch,0,NULL) == NULL) {
 		#ifdef DEBUG
-		wchar_t txt2[MAX_PATH];
-		wsprintf(txt2, L"Could not unload the dll. pid: %d.", pid);
-		Error(L"CreateRemoteThread()", txt2, GetLastError(), TEXT(__FILE__), __LINE__);
+		wsprintf(txt, L"Could not unload the dll. pid: %d.", pid);
+		Error(L"CreateRemoteThread()", txt, GetLastError(), TEXT(__FILE__), __LINE__);
 		#endif
 		CloseHandle(process);
 	}
@@ -620,12 +612,12 @@ void ShowContextMenu(HWND hwnd) {
 	wchar_t path[MAX_PATH];
 	GetModuleFileName(NULL, path, MAX_PATH);
 	swprintf(txt, L"\"%s\"", path);
-	if (!wcscmp(txt,autostart_value)) {
+	if (!wcsicmp(txt,autostart_value)) {
 		autostart_enabled = 1;
 	}
 	else {
 		swprintf(txt, L"\"%s\" -hide", path);
-		if (!wcscmp(txt,autostart_value)) {
+		if (!wcsicmp(txt,autostart_value)) {
 			autostart_enabled = 1;
 			autostart_hide = 1;
 		}
@@ -634,7 +626,7 @@ void ShowContextMenu(HWND hwnd) {
 	HMENU hAutostartMenu = CreatePopupMenu();
 	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_enabled?MF_CHECKED:0), (autostart_enabled?SWM_AUTOSTART_OFF:SWM_AUTOSTART_ON), l10n->menu_autostart);
 	InsertMenu(hAutostartMenu, -1, MF_BYPOSITION|(autostart_hide?MF_CHECKED:0), (autostart_hide?SWM_AUTOSTART_HIDE_OFF:SWM_AUTOSTART_HIDE_ON), l10n->menu_hide);
-	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_POPUP, (UINT)hAutostartMenu, l10n->menu_autostart);
+	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_POPUP, (UINT_PTR)hAutostartMenu, l10n->menu_autostart);
 	InsertMenu(hMenu, -1, MF_BYPOSITION|MF_SEPARATOR, 0, NULL);
 	
 	//Shutdown
@@ -664,10 +656,10 @@ int UpdateTray() {
 	
 	//Only add or modify if not hidden or if balloon will be displayed
 	if (!hide || traydata.uFlags&NIF_INFO) {
-		int tries = 0; //Try at least ten times, sleep 100 ms between each attempt
+		int tries = 0; //Try at least a hundred times, sleep 100 ms between each attempt
 		while (Shell_NotifyIcon((tray_added?NIM_MODIFY:NIM_ADD),&traydata) == FALSE) {
 			tries++;
-			if (tries >= 10) {
+			if (tries >= 100) {
 				Error(L"Shell_NotifyIcon(NIM_ADD/NIM_MODIFY)", L"Failed to update tray icon.", GetLastError(), TEXT(__FILE__), __LINE__);
 				return 1;
 			}
@@ -734,7 +726,6 @@ void SetAutostart(int on, int hide) {
 
 void ToggleState() {
 	enabled = !enabled;
-	UpdateTray();
 	if (enabled) {
 		SendMessage(traydata.hWnd, WM_UPDATESETTINGS, 0, 0);
 	}
@@ -742,6 +733,7 @@ void ToggleState() {
 		KillTimer(hwnd, PATCHTIMER);
 		PatchApps(1);
 	}
+	UpdateTray();
 }
 
 //Shutdown dialog
@@ -807,7 +799,7 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		GetPrivateProfileString(APP_NAME, L"Language", L"en-US", txt,sizeof(txt)/sizeof(wchar_t), path);
 		int i;
 		for (i=0; i < num_languages; i++) {
-			if (!wcscmp(txt,languages[i].code)) {
+			if (!wcsicmp(txt,languages[i].code)) {
 				l10n = languages[i].strings;
 				//Update shutdown dialog text
 				SendMessage(hwnd_text, WM_SETTEXT, 0, (LPARAM)l10n->shutdown_ask);
@@ -838,53 +830,55 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			settings.HelpUrl = NULL;
 		}
 		GetPrivateProfileString(APP_NAME, L"HelpUrl", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
-		if (wcslen(txt) != 0 && (!wcsncmp(txt,L"http://",7) || !wcsncmp(txt,L"https://",8))) {
+		if (wcslen(txt) != 0 && (!wcsnicmp(txt,L"http://",7) || !wcsnicmp(txt,L"https://",8))) {
 			settings.HelpUrl = malloc((wcslen(txt)+1)*sizeof(wchar_t));
 			wcscpy(settings.HelpUrl, txt);
 		}
 		//PatchApps
 		GetPrivateProfileString(APP_NAME, L"PatchApps", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
 		swscanf(txt, L"%d", &settings.PatchApps);
-		if (settings.PatchApps) {
-			PatchApps(0);
-			SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
-		}
 		//PatchList
 		if (settings.PatchList.numitems > 0) {
 			for (i=0; i < settings.PatchList.numitems; i++) {
 				free(settings.PatchList.items[i]);
 			}
 			free(settings.PatchList.items);
+			settings.PatchList.items = NULL;
 			settings.PatchList.numitems = 0;
 		}
-		GetPrivateProfileString(APP_NAME, L"PatchList", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
-		int patchlist_alloc = 0;
-		wchar_t *pos = txt;
-		while (pos != NULL) {
-			wchar_t *program = pos;
-			//Move pos to next item (if any)
-			pos = wcsstr(pos,L"|");
-			if (pos != NULL) {
-				*pos = '\0';
-				pos++;
+		if (settings.PatchApps) {
+			GetPrivateProfileString(APP_NAME, L"PatchList", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
+			int patchlist_alloc = 0;
+			wchar_t *pos = txt;
+			while (pos != NULL) {
+				wchar_t *program = pos;
+				//Move pos to next item (if any)
+				pos = wcsstr(pos,L"|");
+				if (pos != NULL) {
+					*pos = '\0';
+					pos++;
+				}
+				//Skip this item if it's empty
+				if (wcslen(program) == 0) {
+					continue;
+				}
+				//Allocate memory and copy over text
+				wchar_t *item = malloc((wcslen(program)+1)*sizeof(wchar_t));
+				wcscpy(item, program);
+				//Make sure we have enough space
+				if (settings.PatchList.numitems == patchlist_alloc) {
+					patchlist_alloc += 10;
+					settings.PatchList.items = realloc(settings.PatchList.items,patchlist_alloc*sizeof(wchar_t*));
+				}
+				//Store item
+				settings.PatchList.items[settings.PatchList.numitems] = item;
+				settings.PatchList.numitems++;
 			}
-			//Skip this item if it's empty
-			if (wcslen(program) == 0) {
-				continue;
-			}
-			//Allocate memory and copy over text
-			wchar_t *item;
-			item = malloc((wcslen(program)+1)*sizeof(wchar_t));
-			wcscpy(item, program);
-			//Make sure we have enough space
-			if (settings.PatchList.numitems == patchlist_alloc) {
-				patchlist_alloc += 10;
-				settings.PatchList.items = realloc(settings.PatchList.items,patchlist_alloc*sizeof(wchar_t*));
-			}
-			//Store item
-			settings.PatchList.items[settings.PatchList.numitems] = item;
-			settings.PatchList.numitems++;
+			//Start PatchApps
+			PatchApps(0);
+			SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
 		}
+		return 0;
 	}
 	else if (msg == WM_ADDTRAY && (!settings.Silent || GetAsyncKeyState(VK_SHIFT)&0x8000)) {
 		hide = 0;
@@ -997,9 +991,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			PatchApps(1);
 		}
 		RemoveTray();
-		if (user32) {
-			FreeLibrary(user32);
-		}
 		PostQuitMessage(0);
 		return 0;
 	}
