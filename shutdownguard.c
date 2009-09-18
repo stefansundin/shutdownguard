@@ -250,7 +250,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	icon[0] = LoadImage(hInst,L"tray_disabled",IMAGE_ICON,0,0,LR_DEFAULTCOLOR);
 	icon[1] = LoadImage(hInst,L"tray_enabled",IMAGE_ICON,0,0,LR_DEFAULTCOLOR);
 	if (icon[0] == NULL || icon[1] == NULL) {
-		Error(L"LoadImage('tray-*')", L"Fatal error.", GetLastError(), TEXT(__FILE__), __LINE__);
+		Error(L"LoadImage('tray_*')", L"Fatal error.", GetLastError(), TEXT(__FILE__), __LINE__);
 		PostQuitMessage(1);
 	}
 	
@@ -282,7 +282,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		//Load user32.dll
 		HINSTANCE user32 = GetModuleHandle(L"user32.dll");
 		if (user32 == NULL) {
-			Error(L"LoadLibrary('user32.dll')", L"This really shouldn't have happened.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), TEXT(__FILE__), __LINE__);
+			Error(L"GetModuleHandle('user32.dll')", L"This really shouldn't have happened.\nGo check the "APP_NAME" website for an update. If the latest version doesn't fix this, please report it.", GetLastError(), TEXT(__FILE__), __LINE__);
 		}
 		else {
 			//Get address to ShutdownBlockReasonCreate
@@ -325,10 +325,12 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 int PatchApps(int unpatch) {
 	//We load the dll with ANSI functions
 	//Get path to patch.dll
-	char dll[MAX_PATH];
-	GetModuleFileNameA(NULL, dll, sizeof(dll));
-	PathRemoveFileSpecA(dll);
-	strcat(dll, "\\patch.dll");
+	char *dll, dll_x86[MAX_PATH], dll_x64[MAX_PATH];
+	GetModuleFileNameA(NULL, dll_x86, sizeof(dll_x86));
+	PathRemoveFileSpecA(dll_x86);
+	strcpy(dll_x64, dll_x86);
+	strcat(dll_x86, "\\patch.dll");
+	strcat(dll_x64, "\\patch_x64.dll");
 	
 	//Get address to LoadLibrary and FreeLibrary
 	if (pfnLoadLibrary == NULL) {
@@ -446,6 +448,16 @@ int PatchApps(int unpatch) {
 			continue;
 		}
 		
+		//x64
+		BOOL x64 = FALSE;
+		IsWow64Process(process, &x64);
+		if (x64) {
+			dll = dll_x64;
+		}
+		else {
+			dll = dll_x86;
+		}
+		
 		//Enumerate modules to check if this process has already been patched
 		HMODULE modules[1024];
 		int nummodules = 0;
@@ -454,6 +466,11 @@ int PatchApps(int unpatch) {
 			wsprintf(txt, L"Could not enumerate modules. pid: %d.", pid);
 			Error(L"EnumProcessModules()", txt, GetLastError(), TEXT(__FILE__), __LINE__);
 			#endif
+			//If unpatching, bail out since we have no chance to get a reference to the module
+			if (unpatch) {
+				CloseHandle(process);
+				continue;
+			}
 		}
 		else {
 			nummodules = cbNeeded/sizeof(HMODULE);
@@ -471,7 +488,7 @@ int PatchApps(int unpatch) {
 				//If one fails, all usually fails... bail out
 				break;
 			}
-			//patch.dll already loaded?
+			//patch already loaded?
 			if (!stricmp(modname,dll)) {
 				patchmod = modules[j];
 				patch = 0;
@@ -1021,9 +1038,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		}
 	}
 	else if (msg == WM_TIMER && enabled) {
-		//KillTimer(hwnd, PATCHTIMER);
+		KillTimer(hwnd, PATCHTIMER);
 		PatchApps(0);
-		//SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
+		SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
 	}
 	return DefWindowProc(hwnd, msg, wParam, lParam);
 }
