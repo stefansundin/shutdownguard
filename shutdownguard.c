@@ -230,13 +230,13 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	
 	//Create window
 	hwnd = CreateWindowEx(WS_EX_TOPMOST, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW^WS_SIZEBOX^WS_MAXIMIZEBOX^WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 360, 126, NULL, NULL, hInst, NULL);
-	hwnd_text = CreateWindowEx(0, L"STATIC", l10n->shutdown_ask, WS_TABSTOP|WS_VISIBLE|WS_CHILD, 90, 22, 200, 25, hwnd, NULL, hInst, NULL);
+	CreateWindowEx(0, L"STATIC", L"app_icon", SS_ICON|WS_VISIBLE|WS_CHILD, 55, 12, 32, 32, hwnd, NULL, hInst, NULL);
+	hwnd_text = CreateWindowEx(0, L"STATIC", l10n->shutdown_ask, WS_TABSTOP|WS_VISIBLE|WS_CHILD, 100, 22, 200, 25, hwnd, NULL, hInst, NULL);
 	hwnd_logoff = CreateWindowEx(0, L"BUTTON", l10n->shutdown_logoff, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 15, 60, 75, 23, hwnd, (HMENU)IDOK, hInst, NULL);
 	hwnd_shutdown = CreateWindowEx(0, L"BUTTON", l10n->shutdown_shutdown, BS_DEFPUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 100, 60, 75, 23, hwnd, (HMENU)IDCLOSE, hInst, NULL);
 	hwnd_reboot = CreateWindowEx(0, L"BUTTON", l10n->shutdown_reboot, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 185, 60, 75, 23, hwnd, (HMENU)IDRETRY, hInst, NULL);
 	hwnd_nothing = CreateWindowEx(0, L"BUTTON", l10n->shutdown_nothing, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 270, 60, 75, 23, hwnd, (HMENU)IDCANCEL, hInst, NULL);
 	hwnd_help = CreateWindowEx(0, L"BUTTON", l10n->shutdown_help, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 355, 60, 75, 23, hwnd, (HMENU)IDHELP, hInst, NULL);
-	
 	//Set font
 	HFONT font = CreateFont(14,0,0,0,FW_DONTCARE,FALSE,FALSE,FALSE,ANSI_CHARSET,OUT_DEFAULT_PRECIS,CLIP_DEFAULT_PRECIS,DEFAULT_QUALITY,DEFAULT_PITCH|FF_SWISS,L"MS Sans Serif");
 	SendMessage(hwnd_text, WM_SETFONT, (WPARAM)font, TRUE);
@@ -246,7 +246,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	SendMessage(hwnd_nothing, WM_SETFONT, (WPARAM)font, TRUE);
 	SendMessage(hwnd_help, WM_SETFONT, (WPARAM)font, TRUE);
 	
-	//Load icons
+	//Load tray icons
 	icon[0] = LoadImage(hInst,L"tray_disabled",IMAGE_ICON,0,0,LR_DEFAULTCOLOR);
 	icon[1] = LoadImage(hInst,L"tray_enabled",IMAGE_ICON,0,0,LR_DEFAULTCOLOR);
 	if (icon[0] == NULL || icon[1] == NULL) {
