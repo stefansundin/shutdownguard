@@ -16,9 +16,13 @@ This is also the first time I have programmed something like this, so use it at 
 
 I aimed to first and foremost get a working version released, and I now plan to incrementally improving it for future versions.
 
+Also note that because patching other processes is often used by viruses and programs like that, antivirus programs might mistake ShutdownGuard for a virus. This is a false positive, of course, and is caused by the antivirus heuristics.
+
 = Proofness =
 
 *!PatchApps is not bullet-proof!* If a program *really* wants to work around this, it can do so very easily. ShutdownGuard only patches the executable, not the modules (DLLs) it has loaded.
+
+Also note that currently ShutdownGuard can only patch 32-bit processes. I am working on patching 64-bit processes.
 
 Note that many error messages from !PatchApps will only be shown when running in debug mode (you can do that by compiling from source yourself). Therefore a patching might fail even if you don't see any error message.
 
