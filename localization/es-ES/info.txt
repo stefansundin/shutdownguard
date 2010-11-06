@@ -5,18 +5,13 @@ Traducido por Fabrizio Ferri
 Evita los apagados y reinicios indeseados de Windows.
 Cuando ShutdownGuard bloquea un intento de apagado aparece un aviso en la barra de tareas preguntando si quieres continuar.
 El clic central en el icono del área de notificación invocará el cuadro de opciones de apagado
+ShutdownGuard buscará las actualizaciones automáticamente. Puedes desactivarlas editando el fichero ShutdownGuard.ini.
 
-ShutdownGuard buscará las actualizaciones automáticamente.
-Puedes desactivarlas editando el fichero ShutdownGuard.ini.
-
-Puedes usar el parámetro -hide para ocultar el icono de notificación.
-
-Visita mi página web en http://shutdownguard.googlecode.com/
-Envía comentarios a recover89@gmail.com
+Visita la página web en http://code.google.com/p/shutdownguard/
+Visita la página web del autor en http://stefansundin.com/
 
 Si consideras que este programa es útil, puedes realizar un donativo.
 En mi web hay más información acerca de cómo realizar un donativo.
-
 ShutdownGuard es un programa de código abierto bajo licencia GPL.
 
 Historial de cambios

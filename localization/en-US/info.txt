@@ -4,22 +4,23 @@ Made by Stefan Sundin
 Prevent Windows to shutdown, reboot or log off.
 When ShutdownGuard prevents something it will pop up in the tray and ask you if you want to continue.
 Middle-click the tray icon to bring up the shutdown dialog.
+ShutdownGuard will automatically check for updates. You can disable this in ShutdownGuard.ini.
 
-ShutdownGuard will automatically check for updates.
-You can disable this in ShutdownGuard.ini.
+NOTE: ShutdownGuard does not work for all programs!
+Some programs force the shutdown and in that case there is nothing ShutdownGuard can do about it.
 
-You can use -hide as a parameter to hide the tray icon.
-
-Visit the website at http://shutdownguard.googlecode.com/
-Send feedback to recover89@gmail.com
+Visit the website at http://code.google.com/p/shutdownguard/
+Visit the author's website at http://stefansundin.com/
 
 If this program is useful for you, please consider donating money.
 You can find out how to donate on the website.
-
 ShutdownGuard is open source, licensed under GPL.
 
 Changelog
 ---------
+0.5:
+Removed PatchApps.
+
 0.4 - 2009-09-05:
 Added the ability to patch apps (see ShutdownGuard.ini).
 Added reboot button to the shutdown dialog.
