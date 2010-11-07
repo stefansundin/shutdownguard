@@ -1,6 +1,5 @@
 /*
-	ShutdownGuard - Prevent Windows shutdown
-	Copyright (C) 2009  Stefan Sundin (recover89@gmail.com)
+	Copyright (C) 2010  Stefan Sundin (recover89@gmail.com)
 	
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -15,7 +14,7 @@
 #include <windows.h>
 
 //App
-#define APP_NAME "ShutdownGuard"
+#define APP_NAME "ShutdownPatcher"
 
 //Cool stuff
 HMODULE app = NULL;
@@ -27,7 +26,7 @@ char txt[1000];
 
 #ifdef DEBUG
 void Log(char *line) {
-	FILE *f = fopen("C:\\shutdownguard-log.txt","ab");
+	FILE *f = fopen("C:\\patch-log.txt","ab");
 	fprintf(f, "%s\n", line);
 	fflush(f);
 	fclose(f);
@@ -35,7 +34,7 @@ void Log(char *line) {
 void Error(char *func, int errorcode, char *file, int line) {
 	//Format message
 	char *errormsg;
-	int length = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM,NULL,errorcode,0,(char*)&errormsg,0,NULL);
+	int length = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM, NULL, errorcode, 0, (char*)&errormsg, 0, NULL);
 	errormsg[length-2] = '\0'; //Remove that damn newline at the end of the formatted error message
 	//Write error to file
 	sprintf(txt, "%s failed in file %s, line %d. Error: %s (%d).\n", func, file, line, errormsg, errorcode);
@@ -55,8 +54,8 @@ int PatchIAT(PCSTR pszCalleeModName, PROC pfnCurrent, PROC pfnNew, HMODULE hmodC
 		return 1;
 	}
 	//Get address to ImageDirectoryEntryToData
-	PVOID WINAPI (*ImageDirectoryEntryToData)(PVOID,BOOLEAN,USHORT,PULONG)=NULL;
-	ImageDirectoryEntryToData = (PVOID)GetProcAddress(dbghelp,"ImageDirectoryEntryToData");
+	PVOID WINAPI (*ImageDirectoryEntryToData)(PVOID,BOOLEAN,USHORT,PULONG) = NULL;
+	ImageDirectoryEntryToData = (PVOID)GetProcAddress(dbghelp, "ImageDirectoryEntryToData");
 	if (ImageDirectoryEntryToData == NULL) {
 		Error("GetProcAddress('ImageDirectoryEntryToData')", GetLastError(), TEXT(__FILE__), __LINE__);
 		return 1;
@@ -117,8 +116,8 @@ void ShutdownBlocked(UINT uFlags, DWORD dwReason) {
 	Log(txt);
 	#endif
 	//This only works for desktop applications, and not services or system processes
-	//Need to find a way to notify ShutdownGuard.exe from a system/service process!
-	HWND wnd = FindWindow(APP_NAME,NULL);
+	//Need to find a way to notify ShutdownPatcher.exe from a system/service process!
+	HWND wnd = FindWindow(APP_NAME, NULL);
 	PostMessage(wnd, WM_SHUTDOWNBLOCKED, uFlags, dwReason);
 }
 
@@ -128,7 +127,7 @@ BOOL APIENTRY DllMain(HINSTANCE hInstance, DWORD reason, LPVOID reserved) {
 		app = GetModuleHandle(NULL);
 		//Get address to ExitWindowsEx()
 		HMODULE user32 = LoadLibrary("user32.dll");
-		fnExitWindowsEx = (PROC)GetProcAddress(user32,"ExitWindowsEx");
+		fnExitWindowsEx = (PROC)GetProcAddress(user32, "ExitWindowsEx");
 		FreeLibrary(user32);
 		//Patch IAT
 		if (PatchIAT("user32.dll",fnExitWindowsEx,(PROC)ShutdownBlocked,app) == 0) {
