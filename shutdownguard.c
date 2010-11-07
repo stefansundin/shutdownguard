@@ -325,7 +325,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 			settings.HelpUrl = malloc((wcslen(txt)+1)*sizeof(wchar_t));
 			wcscpy(settings.HelpUrl, txt);
 		}
-		return 0;
 	}
 	else if (msg == WM_ADDTRAY && (!settings.Silent || GetAsyncKeyState(VK_SHIFT)&0x8000)) {
 		hide = 0;

@@ -25,7 +25,7 @@ if "%1" == "all" (
 		if not exist "build\x64". mkdir "build\x64"
 		%prefix64%windres -o build\x64\shutdownguard.o include\shutdownguard.rc
 		%prefix64%gcc -o "build\x64\ShutdownGuard.exe" shutdownguard.c build\x64\shutdownguard.o -mwindows -lshlwapi -lwininet -O2 -s
-		if not exist "build\x64\KillKeys.exe". exit /b
+		if not exist "build\x64\ShutdownGuard.exe". exit /b
 	)
 	
 	for %%f in (%l10n%) do (
@@ -56,6 +56,7 @@ if "%1" == "all" (
 	%prefix64%windres -o build\x64\shutdownguard.o include\shutdownguard.rc
 	%prefix64%gcc -o ShutdownGuard.exe shutdownguard.c build\x64\shutdownguard.o -mwindows -lshlwapi -lwininet -g -DDEBUG
 ) else (
+	%prefix32%windres -o build\shutdownguard.o include\shutdownguard.rc
 	%prefix32%gcc -o ShutdownGuard.exe shutdownguard.c build\shutdownguard.o -mwindows -lshlwapi -lwininet -g -DDEBUG
 	
 	if "%1" == "run" (
