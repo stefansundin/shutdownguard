@@ -1,9 +1,10 @@
 #summary Some info
 #labels Featured
 
-The idea for ShutdownGuard came from a program I made a long time ago in Delphi, named ShutdownGuard. This C-port is a much improved version of that. You can download the old Delphi program and its source from the [http://code.google.com/p/shutdownguard/downloads/list downloads section].
+The idea for ShutdownGuard came from a program I made a long time ago in Delphi. This C-port is a much improved version of that. You can download the old Delphi program and its source code from the downloads section.
 
 Note that programs are still able to shutdown Windows if they explicitly force it.
+
 
 = Balloon tips =
 
@@ -11,7 +12,8 @@ This will appear in Windows XP when a shutdown is blocked.
 
 http://shutdownguard.googlecode.com/svn/wiki/ShutdownGuard.png
 
-= Vista =
+
+= Vista and Windows 7 =
 
 With Vista, Microsoft broke all programs who previously prevented shutdowns, now programs have to specify a reason as to why they want to prevent a shutdown.
 
