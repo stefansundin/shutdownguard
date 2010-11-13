@@ -99,6 +99,23 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		return 0;
 	}
 	
+	//Create window
+	WNDCLASSEX wnd;
+	wnd.cbSize = sizeof(WNDCLASSEX);
+	wnd.style = 0;
+	wnd.lpfnWndProc = WindowProc;
+	wnd.cbClsExtra = 0;
+	wnd.cbWndExtra = 0;
+	wnd.hInstance = hInst;
+	wnd.hIcon = NULL;
+	wnd.hIconSm = NULL;
+	wnd.hCursor = LoadImage(NULL, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTCOLOR|LR_SHARED);
+	wnd.hbrBackground = (HBRUSH)(COLOR_BTNFACE+1);
+	wnd.lpszMenuName = NULL;
+	wnd.lpszClassName = APP_NAME;
+	RegisterClassEx(&wnd);
+	g_hwnd = CreateWindowEx(WS_EX_TOPMOST, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW^WS_SIZEBOX^WS_MAXIMIZEBOX^WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 360, 126, NULL, NULL, hInst, NULL);
+	
 	//Load settings
 	wchar_t path[MAX_PATH];
 	GetModuleFileName(NULL, path, sizeof(path)/sizeof(wchar_t));
@@ -131,23 +148,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 		wcscpy(settings.HelpUrl, txt);
 	}
 	
-	//Create window
-	WNDCLASSEX wnd;
-	wnd.cbSize = sizeof(WNDCLASSEX);
-	wnd.style = 0;
-	wnd.lpfnWndProc = WindowProc;
-	wnd.cbClsExtra = 0;
-	wnd.cbWndExtra = 0;
-	wnd.hInstance = hInst;
-	wnd.hIcon = NULL;
-	wnd.hIconSm = NULL;
-	wnd.hCursor = LoadImage(NULL, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTCOLOR|LR_SHARED);
-	wnd.hbrBackground = (HBRUSH)(COLOR_BTNFACE+1);
-	wnd.lpszMenuName = NULL;
-	wnd.lpszClassName = APP_NAME;
-	RegisterClassEx(&wnd);
 	//Create dialog
-	g_hwnd = CreateWindowEx(WS_EX_TOPMOST, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW^WS_SIZEBOX^WS_MAXIMIZEBOX^WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 360, 126, NULL, NULL, hInst, NULL);
 	CreateWindowEx(0, L"STATIC", L"app_icon", SS_ICON|WS_VISIBLE|WS_CHILD, 55, 12, 32, 32, g_hwnd, NULL, hInst, NULL);
 	hwnd_text = CreateWindowEx(0, L"STATIC", l10n->shutdown_ask, WS_TABSTOP|WS_VISIBLE|WS_CHILD, 100, 22, 200, 25, g_hwnd, NULL, hInst, NULL);
 	hwnd_logoff = CreateWindowEx(0, L"BUTTON", l10n->shutdown_logoff, BS_PUSHBUTTON|WS_TABSTOP|WS_VISIBLE|WS_CHILD, 15, 60, 75, 23, g_hwnd, (HMENU)IDOK, hInst, NULL);
