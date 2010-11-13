@@ -20,7 +20,7 @@ if "%1" == "all" (
 	%prefix32%gcc -o "build\ShutdownPatcher\ShutdownPatcher.exe" patcher.c build\patcher.o -mwindows -lshlwapi -lwininet -lpsapi -O2 -s
 	if not exist "build\ShutdownPatcher\ShutdownPatcher.exe". exit /b
 	%prefix32%windres -o build\patch.o include\patch.rc
-	%prefix32%gcc -o "build\ShutdownPatcher\patch.dll" patch.c build\patch.o -mdll -O2 -s
+	%prefix32%gcc -o "build\ShutdownPatcher\patch.dll" patch.c build\patch.o -mdll -O2 -s -DDEBUG
 	if not exist "build\ShutdownPatcher\patch.dll". exit /b
 	copy "ShutdownPatcher.ini" "build\ShutdownPatcher"
 	
@@ -30,12 +30,11 @@ if "%1" == "all" (
 		%prefix64%gcc -o "build\x64\ShutdownPatcher\ShutdownPatcher.exe" patcher.c build\x64\patcher.o -mwindows -lshlwapi -lwininet -lpsapi -O2 -s
 		if not exist "build\x64\ShutdownPatcher\ShutdownPatcher.exe". exit /b
 		%prefix64%windres -o build\x64\patch_x64.o include\patch.rc
-		%prefix64%gcc -o "build\x64\ShutdownPatcher\patch_x64.dll" patch.c build\x64\patch_x64.o -mdll -O2 -s
+		%prefix64%gcc -o "build\x64\ShutdownPatcher\patch_x64.dll" patch.c build\x64\patch_x64.o -mdll -O2 -s -DDEBUG
 		if not exist "build\x64\ShutdownPatcher\patch_x64.dll". exit /b
 		copy "ShutdownPatcher.ini" "build\x64\ShutdownPatcher"
 		
-		copy "build\x64\ShutdownPatcher\patch_x64.dll" "build\ShutdownPatcher\patch_x64.dll"
-		copy "build\ShutdownPatcher\patch.dll" "build\x64\ShutdownPatcher\patch.dll"
+		copy "build\ShutdownPatcher\patch.dll" "build\x64\ShutdownPatcher"
 	)
 ) else if "%1" == "x64" (
 	if not exist "build\x64". mkdir "build\x64"
