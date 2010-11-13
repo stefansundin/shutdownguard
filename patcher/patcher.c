@@ -20,24 +20,18 @@
 
 //App
 #define APP_NAME            L"ShutdownPatcher"
-#define APP_VERSION         "0.5"
+#define APP_VERSION         "0.1"
 #define APP_URL             L"http://code.google.com/p/shutdownguard/"
 
 //Messages
 #define WM_TRAY                WM_USER+1
 #define SWM_TOGGLE             WM_APP+1
-#define SWM_HIDE               WM_APP+2
-#define SWM_AUTOSTART_ON       WM_APP+3
-#define SWM_AUTOSTART_OFF      WM_APP+4
-#define SWM_AUTOSTART_HIDE_ON  WM_APP+5
-#define SWM_AUTOSTART_HIDE_OFF WM_APP+6
-#define SWM_SETTINGS           WM_APP+7
-#define SWM_CHECKFORUPDATE     WM_APP+8
-#define SWM_SHUTDOWN           WM_APP+9
-#define SWM_UPDATE             WM_APP+10
-#define SWM_ABOUT              WM_APP+11
-#define SWM_EXIT               WM_APP+12
-#define PATCHTIMER             WM_APP+13
+#define SWM_AUTOSTART_ON       WM_APP+2
+#define SWM_AUTOSTART_OFF      WM_APP+3
+#define SWM_SETTINGS           WM_APP+4
+#define SWM_ABOUT              WM_APP+5
+#define SWM_EXIT               WM_APP+6
+#define PATCHTIMER             WM_APP+7
 
 //Stuff missing in MinGW
 #define HWND_MESSAGE ((HWND)-3)
@@ -48,6 +42,9 @@
 #define NIN_BALLOONTIMEOUT     WM_USER+4
 #define NIN_BALLOONUSERCLICK   WM_USER+5
 #endif
+#ifndef EWX_RESTARTAPPS
+#define EWX_RESTARTAPPS        0x00000040
+#endif
 
 //Boring stuff
 LRESULT CALLBACK WindowProc(HWND, UINT, WPARAM, LPARAM);
@@ -55,8 +52,6 @@ HINSTANCE g_hinst = NULL;
 HWND g_hwnd = NULL;
 UINT WM_TASKBARCREATED = 0;
 UINT WM_UPDATESETTINGS = 0;
-UINT WM_ADDTRAY = 0;
-UINT WM_HIDETRAY = 0;
 UINT WM_SHUTDOWNBLOCKED = 0;
 
 //Cool stuff
@@ -67,7 +62,7 @@ struct patchlist {
 	wchar_t *data;
 };
 struct patchlist PatchList = {NULL,0};
-#define PATCHINTERVAL 5000
+#define PATCHINTERVAL 1000
 
 //Patch
 HMODULE WINAPI (*pfnLoadLibrary)(LPCTSTR) = NULL;
@@ -76,26 +71,18 @@ HMODULE WINAPI (*pfnFreeLibrary)(LPCTSTR) = NULL;
 //Include stuff
 #include "../localization/strings.h"
 #include "../include/error.c"
-#include "../include/autostart.c"
+#include "include/autostart.c"
 #include "include/tray.c"
 
 //Entry point
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow) {
 	g_hinst = hInst;
 	
-	//Check command line
-	if (!strcmp(szCmdLine,"-hide")) {
-		hide = 1;
-	}
-	
 	//Look for previous instance
 	WM_UPDATESETTINGS = RegisterWindowMessage(L"UpdateSettings");
-	WM_ADDTRAY = RegisterWindowMessage(L"AddTray");
-	WM_HIDETRAY = RegisterWindowMessage(L"HideTray");
 	HWND previnst = FindWindow(APP_NAME, NULL);
 	if (previnst != NULL) {
 		PostMessage(previnst, WM_UPDATESETTINGS, 0, 0);
-		PostMessage(previnst, (hide?WM_HIDETRAY:WM_ADDTRAY), 0, 0);
 		return 0;
 	}
 	
@@ -105,15 +92,6 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	PathRemoveFileSpec(path);
 	wcscat(path, L"\\"APP_NAME".ini");
 	wchar_t txt[1000];
-	//Language
-	GetPrivateProfileString(APP_NAME, L"Language", L"en-US", txt, sizeof(txt)/sizeof(wchar_t), path);
-	int i;
-	for (i=0; languages[i].code != NULL; i++) {
-		if (!wcsicmp(txt,languages[i].code)) {
-			l10n = languages[i].strings;
-			break;
-		}
-	}
 	//PatchList
 	int patchlist_alloc = 0;
 	GetPrivateProfileString(APP_NAME, L"PatchList", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
@@ -181,12 +159,19 @@ int PatchApps(int unpatch) {
 	wchar_t txt[100];
 	//We load the dll with ANSI functions
 	//Get path to patch.dll
+	#ifdef _WIN64
 	char *dll, dll_x86[MAX_PATH], dll_x64[MAX_PATH];
 	GetModuleFileNameA(NULL, dll_x86, sizeof(dll_x86));
 	PathRemoveFileSpecA(dll_x86);
 	strcpy(dll_x64, dll_x86);
 	strcat(dll_x86, "\\patch.dll");
 	strcat(dll_x64, "\\patch_x64.dll");
+	#else
+	char dll[MAX_PATH];
+	GetModuleFileNameA(NULL, dll, sizeof(dll));
+	PathRemoveFileSpecA(dll);
+	strcat(dll, "\\patch.dll");
+	#endif
 	
 	//Get address to LoadLibrary and FreeLibrary
 	if (pfnLoadLibrary == NULL) {
@@ -249,7 +234,7 @@ int PatchApps(int unpatch) {
 		return 1;
 	}
 	
-	//Loop pids
+	//Loop processes
 	int num = cbNeeded/sizeof(DWORD);
 	int i;
 	for (i=0; i < num; i++) {
@@ -268,6 +253,7 @@ int PatchApps(int unpatch) {
 		process = OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ, FALSE, pid);
 		if (process == NULL) {
 			#ifdef DEBUG
+			if (GetLastError() == 5) continue; //Access denied
 			wsprintf(txt, L"Could not open process. pid: %d.", pid);
 			Error(L"OpenProcess(PROCESS_QUERY_INFORMATION|PROCESS_VM_READ)", txt, GetLastError(), TEXT(__FILE__), __LINE__);
 			#endif
@@ -312,14 +298,7 @@ int PatchApps(int unpatch) {
 		BOOL wow64 = FALSE;
 		IsWow64Process(process, &wow64);
 		dll = (wow64?dll_x86:dll_x64);
-		#else
-		dll = dll_x64;
 		#endif
-		
-		//A pointer to a value that is set to TRUE if the process is running under WOW64. If the process is running under 32-bit Windows, the value is set to FALSE. If the process is a 64-bit application running under 64-bit Windows, the value is also set to FALSE.
-		//                |   32-bit OS   |   64-bit OS
-		// 32-bit program |    FALSE      |     TRUE
-		// 64-bit program |     N/A       |     FALSE
 		
 		//Enumerate modules to check if this process has already been patched
 		HMODULE modules[1024];
@@ -369,7 +348,7 @@ int PatchApps(int unpatch) {
 		
 		//Ask the user
 		/*int response = IDCANCEL;
-		response = MessageBox(NULL,txt,L"Patch?",MB_ICONQUESTION|MB_YESNOCANCEL);
+		response = MessageBox(NULL, txt, L"Patch?", MB_ICONQUESTION|MB_YESNOCANCEL);
 		if (response == IDNO) {
 			continue;
 		}
@@ -397,7 +376,7 @@ int PatchApps(int unpatch) {
 int InjectDLL(DWORD pid, char *dll) {
 	wchar_t txt[100];
 	//Open process
-	//HANDLE process = OpenProcess(PROCESS_ALL_ACCESS,TRUE,pid);
+	//HANDLE process = OpenProcess(PROCESS_ALL_ACCESS, TRUE, pid);
 	HANDLE process = OpenProcess(PROCESS_CREATE_THREAD|PROCESS_QUERY_INFORMATION|PROCESS_VM_OPERATION|PROCESS_VM_WRITE|PROCESS_VM_READ, TRUE, pid);
 	if (process == NULL) {
 		#ifdef DEBUG
@@ -492,15 +471,8 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		else if (lParam == WM_RBUTTONDOWN) {
 			ShowContextMenu(hwnd);
 		}
-		else if (lParam == NIN_BALLOONUSERCLICK) {
-			hide = 0;
-			SendMessage(hwnd, WM_COMMAND, SWM_UPDATE, 0);
-		}
-		else if (lParam == NIN_BALLOONTIMEOUT) {
-			if (hide) {
-				RemoveTray();
-			}
-		}
+		else if (lParam == NIN_BALLOONUSERCLICK) { }
+		else if (lParam == NIN_BALLOONTIMEOUT) { }
 	}
 	else if (msg == WM_UPDATESETTINGS) {
 		//Load settings
@@ -509,15 +481,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		PathRemoveFileSpec(path);
 		wcscat(path, L"\\"APP_NAME".ini");
 		wchar_t txt[1000];
-		//Language
-		GetPrivateProfileString(APP_NAME, L"Language", L"en-US", txt, sizeof(txt)/sizeof(wchar_t), path);
-		int i;
-		for (i=0; languages[i].code != NULL; i++) {
-			if (!wcsicmp(txt,languages[i].code)) {
-				l10n = languages[i].strings;
-				break;
-			}
-		}
 		//PatchList
 		KillTimer(g_hwnd, PATCHTIMER);
 		PatchApps(1);
@@ -550,14 +513,6 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		PatchApps(0);
 		SetTimer(hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
 	}
-	else if (msg == WM_ADDTRAY) {
-		hide = 0;
-		UpdateTray();
-	}
-	else if (msg == WM_HIDETRAY) {
-		hide = 1;
-		RemoveTray();
-	}
 	else if (msg == WM_TASKBARCREATED) {
 		tray_added = 0;
 		UpdateTray();
@@ -567,21 +522,11 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		if (wmId == SWM_TOGGLE) {
 			ToggleState();
 		}
-		else if (wmId == SWM_HIDE) {
-			hide = 1;
-			RemoveTray();
-		}
 		else if (wmId == SWM_AUTOSTART_ON) {
-			SetAutostart(1, 0);
+			SetAutostart(1);
 		}
 		else if (wmId == SWM_AUTOSTART_OFF) {
-			SetAutostart(0, 0);
-		}
-		else if (wmId == SWM_AUTOSTART_HIDE_ON) {
-			SetAutostart(1, 1);
-		}
-		else if (wmId == SWM_AUTOSTART_HIDE_OFF) {
-			SetAutostart(1, 0);
+			SetAutostart(0);
 		}
 		else if (wmId == SWM_SETTINGS) {
 			wchar_t path[MAX_PATH];
@@ -608,8 +553,25 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		SetTimer(g_hwnd, PATCHTIMER, PATCHINTERVAL, NULL);
 	}
 	else if (msg == WM_SHUTDOWNBLOCKED) {
+		//wParam = uFlags, lParam = dwReason
+		UINT forced = (wParam&EWX_FORCE&EWX_FORCEIFHUNG);
+		UINT uFlags = (wParam^forced);
+		//Assemble message
+		wchar_t text[1000];
+		if (uFlags == EWX_LOGOFF) {
+			wcscpy(text, L"Prevented log off.");
+		}
+		else if (uFlags == EWX_SHUTDOWN || wParam == EWX_POWEROFF) {
+			wcscpy(text, L"Prevented shutdown.");
+		}
+		else if (uFlags == EWX_REBOOT || wParam == EWX_RESTARTAPPS) {
+			wcscpy(text, L"Prevented reboot.");
+		}
+		else {
+			wsprintf(text, L"Unrecognized shutdown code (%d).", uFlags);
+		}
 		//Display balloon tip
-		wcsncpy(tray.szInfo, l10n->prevent, (sizeof(tray.szInfo))/sizeof(wchar_t));
+		wcsncpy(tray.szInfo, text, sizeof(tray.szInfo)/sizeof(wchar_t));
 		tray.uFlags |= NIF_INFO;
 		UpdateTray();
 		tray.uFlags ^= NIF_INFO;

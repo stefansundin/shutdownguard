@@ -35,7 +35,9 @@ void Error(char *func, int errorcode, char *file, int line) {
 	//Format message
 	char *errormsg;
 	int length = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER|FORMAT_MESSAGE_FROM_SYSTEM, NULL, errorcode, 0, (char*)&errormsg, 0, NULL);
-	errormsg[length-2] = '\0'; //Remove that damn newline at the end of the formatted error message
+	if (length != 0) {
+		errormsg[length-2] = '\0'; //Remove that damn newline at the end of the formatted error message
+	}
 	//Write error to file
 	sprintf(txt, "%s failed in file %s, line %d. Error: %s (%d).\n", func, file, line, errormsg, errorcode);
 	LocalFree(errormsg);
