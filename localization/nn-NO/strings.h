@@ -1,9 +1,5 @@
 /*
 	ShutdownGuard - nn-NO lokalisering av Jon Stødle (jonstodle@gmail.com)
-	Do not localize APP_NAME, it will be automatically replaced.
-	Keep this file in UTF–8
-	
-	Copyright (C) 2009  Stefan Sundin (recover89@gmail.com)
 	
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -12,28 +8,32 @@
 */
 
 struct strings nn_NO = {
- /* menu_enable */       L"Slå på",
- /* menu_disable */      L"Slå av",
- /* menu_hide */         L"Gøym ikon",
- /* menu_autostart */    L"Autostart",
- /* menu_shutdown */     L"Skru av",
- /* menu_update */       L"Oppdatering tilgjengeleg",
- /* menu_about */        L"Om",
- /* menu_exit */         L"Avslutt",
- /* tray_enabled */      APP_NAME " (slådd på)",
- /* tray_disabled */     APP_NAME " (slådd av)",
- /* prevent */           L"Forhindra Windows i å skrue av.",
- /* balloon */           L"Klikk her for å halde fram avskruinga.",
- /* shutdown_ask */      L"Kva vil du gjere?",
- /* shutdown_logoff */   L"Logg av",
- /* shutdown_reboot */   L"Start på nytt",
+ /* menu_enable       */ L"Slå på",
+ /* menu_disable      */ L"Slå av",
+ /* menu_hide         */ L"Gøym ikon",
+ /*+ menu_options      */ L"Options",
+ /* menu_autostart    */ L"Autostart",
+ /*+ menu_settings     */ L"Open settings",
+ /*+ menu_chkupdate    */ L"Check for update",
+ /* menu_update       */ L"Oppdatering tilgjengeleg",
+ /* menu_shutdown     */ L"Skru av",
+ /* menu_about        */ L"Om",
+ /* menu_exit         */ L"Avslutt",
+ /* tray_enabled      */ APP_NAME " (slådd på)",
+ /* tray_disabled     */ APP_NAME " (slådd av)",
+ /* prevent           */ L"Forhindra Windows i å skrue av.",
+ /* balloon           */ L"Klikk her for å halde fram avskruinga.",
+ /* shutdown_ask      */ L"Kva vil du gjere?",
+ /* shutdown_logoff   */ L"Logg av",
+ /* shutdown_reboot   */ L"Start på nytt",
  /* shutdown_shutdown */ L"Skru av",
- /* shutdown_nothing */  L"Ingenting",
- /* shutdown_help */     L"Hjelp",
- /* update_balloon */    L"Fann ein ny versjon",
- /* update_dialog */     L"Ein ny versjon er tilgjengeleg.\nGå til vevside?",
- /* about_title */       L"Om " APP_NAME,
- /* about */             APP_NAME " - " APP_VERSION "\n\
+ /* shutdown_nothing  */ L"Ingenting",
+ /* shutdown_help     */ L"Hjelp",
+ /* update_balloon    */ L"Fann ein ny versjon",
+ /* update_dialog     */ L"Ein ny versjon er tilgjengeleg.\nGå til vevside?",
+ /*+ update_nonew      */ L"No update available.",
+ /* about_title       */ L"Om " APP_NAME,
+ /*! about             */ APP_NAME " - " APP_VERSION "\n\
 Laga av Stefan Sundin\n\
 Omset av Jon Stødle (jonstodle@gmail.com)\n\
 \n\

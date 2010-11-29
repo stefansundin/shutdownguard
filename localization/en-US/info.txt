@@ -6,8 +6,8 @@ When ShutdownGuard prevents something it will pop up in the tray and ask you if 
 Middle-click the tray icon to bring up the shutdown dialog.
 ShutdownGuard will automatically check for updates. You can disable this in ShutdownGuard.ini.
 
-NOTE: ShutdownGuard does not work for all programs!
-Some programs force the shutdown and in that case there is nothing ShutdownGuard can do about it.
+Note that ShutdownGuard will not be able to prevent all shutdowns, since some programs explicitly tells Windows to force the shutdown.
+This means some programs will still be able to shutdown your computer!
 
 Visit the website at http://code.google.com/p/shutdownguard/
 Visit the author's website at http://stefansundin.com/
@@ -18,8 +18,10 @@ ShutdownGuard is open source, licensed under GPL.
 
 Changelog
 ---------
-0.5:
-Removed PatchApps.
+1.0:
+Added 64-bit executable. The installer will automatically install the correct executable.
+Removed PatchApps. It has now been separated to a separate program. Read the wiki for more information.
+Fixed some minor bugs.
 
 0.4 - 2009-09-05:
 Added the ability to patch apps (see ShutdownGuard.ini).

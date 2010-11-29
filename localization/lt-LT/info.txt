@@ -5,22 +5,23 @@ Iðvertë p|b (pasmane@gmail.com)
 Sustabdo Windows iðsijungimà, persikrovimà ar iðsiregistravimà.
 Kai ShutdownGuard sustabdo veiksmà, dëkle parodo praneðimà su galimybe tæsti.
 Paspauskite vidurinájá pelës klaviðà, jei norite iðkviesti iðjungimo lentelæ.
+ShutdownGuard automatiškai ieško atnaujinimu. Ieškojima išjungti galite ShutdownGuard.ini.
 
-ShutdownGuard automatiškai ieško atnaujinimu.
-Ieškojima išjungti galite ShutdownGuard.ini.
-
-Galite naudoti parametrà '-hide', kad paslëptûmëte dëklo ikonà.
-
-Aplankykite tinklapi http://shutdownguard.googlecode.com/
-Atsiliepimus siøskite recover89@gmail.com
+Aplankykite tinklapi http://code.google.com/p/shutdownguard/
+- Atsiliepimus siøskite recover89@gmail.com
++ Visit the author's website at http://stefansundin.com/
 
 Jei ši programa Jums naudinga, paaukokite pinigu.
 Apie aukojima galite sužinoti tinklapyje.
-
 ShutdownGuard yra atvirojo kodo, licencijuota pagal BVL (GPL).
 
 Changelog
 ---------
+1.0:
+Added 64-bit executable. The installer will automatically install the correct executable.
+Removed PatchApps. It has now been separated to a separate program. Read the wiki for more information.
+Fixed some minor bugs.
+
 0.4 - 2009-09-05:
 Added the ability to patch apps (see ShutdownGuard.ini).
 Added reboot button to the shutdown dialog.

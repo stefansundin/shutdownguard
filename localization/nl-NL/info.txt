@@ -5,22 +5,23 @@ Translated by Laurens van Dam (laurens94@gmail.com)
 Voorkom het afsluiten, opnieuw opstarten of afmelden in Windows.
 Wanneer ShutdownGuard iets voorkomt, zal het in de taakbalk verschijnen en vraagt je of je verder wilt gaan.
 Klik met de middelste toets op het icoon in de taakbalk om het afsluitvenster te openen.
+ShutdownGuard controleert automatisch op updates. Je kunt dit uitschakelen in ShutdownGuard.ini.
 
-ShutdownGuard controleert automatisch op updates.
-Je kunt dit uitschakelen in ShutdownGuard.ini.
-
-Je kan -hide als parameter gebruiken om het icoon in de taakbalk te verbergen.
-
-Bezoek de website op http://shutdownguard.googlecode.com/
-Verstuur feedback naar recover89@gmail.com
+Bezoek de website op http://code.google.com/p/shutdownguard/
+-Verstuur feedback naar recover89@gmail.com
++Visit the author's website at http://stefansundin.com/
 
 Als het programma je goed helpt en je maakt er vaak gebruik van, overweeg dan alstublieft een geldbedrag te doneren.
 De uitleg over hoe je kan doneren staat op de website.
-
 ShutdownGuard is open source, gelicenseerd onder GPL.
 
 Changelog
 ---------
+1.0:
+Added 64-bit executable. The installer will automatically install the correct executable.
+Removed PatchApps. It has now been separated to a separate program. Read the wiki for more information.
+Fixed some minor bugs.
+
 0.4 - 2009-09-05:
 De mogelijkheid toegevoegd om programma's te patchen (zie ShutdownGuard.ini).
 Herstart functie toegevoegd in afsluitmenu.

@@ -5,22 +5,23 @@ Omset av Jon Stødle (jonstodle@gmail.com)
 Forhindrar Windows i å skru av, gjere omstart eller logge av.
 Når ShutdownGuard forhindrar noko, vil det kome ein sprettoppballong som spør om du vil halde fram.
 Trykk på skrollehjulet for å få opp avsluttingsdialogen
+ShutdownGuard vil sjekke for oppdateringar automatisk. Du kan skrue av dette i ShutdownGuard.ini.
 
-ShutdownGuard vil sjekke for oppdateringar automatisk.
-Du kan skrue av dette i ShutdownGuard.ini.
-
-Du kan bruke -hide som ein parameter for å gøyme systemkorgikonet.
-
-Vitj vevsida på http://shutdownguard.googlecode.com/
-Send tilbakemelding til recover89@gmail.com
+Vitj vevsida på http://code.google.com/p/shutdownguard/
+-Send tilbakemelding til recover89@gmail.com
++Visit the author's website at http://stefansundin.com/
 
 Om du tykkjer at programmet er hendig, vurder å gje ein donasjon.
 Du kan finne ut korleis du donerer på vevsida.
-
 ShutdownGuard har open kjeldekode og GPL-lisensiert.
 
 Endringslogg
 ---------
+1.0:
+Added 64-bit executable. The installer will automatically install the correct executable.
+Removed PatchApps. It has now been separated to a separate program. Read the wiki for more information.
+Fixed some minor bugs.
+
 0.4 - 2009-09-05:
 La til høve til å lappe program (sjå ShutdownGuard.ini).
 La til start på nytt-knapp i avslåingsdialogen.

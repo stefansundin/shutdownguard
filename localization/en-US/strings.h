@@ -40,6 +40,8 @@ Prevent Windows to shutdown, reboot or log off.\n\
 When ShutdownGuard prevents something it will pop up in the tray and ask you if you want to continue.\n\
 Middle-click the tray icon to bring up the shutdown dialog.\n\
 \n\
+Note that ShutdownGuard will not be able to prevent all shutdowns, since some programs explicitly tells Windows to force the shutdown. This means some programs will still be able to shutdown your computer!\n\
+\n\
 Visit the website at "APP_URL"\n\
 Visit the author's website at http://stefansundin.com/"
 };

@@ -31,6 +31,9 @@ struct strings {
 #include "en-US/strings.h"
 #include "es-ES/strings.h"
 #include "gl-ES/strings.h"
+#include "lt-LT/strings.h"
+#include "nl-NL/strings.h"
+#include "nn-NO/strings.h"
 
 struct {
 	wchar_t *code;
@@ -39,6 +42,9 @@ struct {
 	{L"en-US", &en_US},
 	{L"es-ES", &es_ES},
 	{L"gl-ES", &gl_ES},
+	{L"lt-LT", &lt_LT},
+	{L"nl-NL", &nl_NL},
+	{L"nn-NO", &nn_NO},
 	{NULL}
 };
 

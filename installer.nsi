@@ -7,7 +7,7 @@
 
 
 !define APP_NAME      "ShutdownGuard"
-!define APP_VERSION   "0.5"
+!define APP_VERSION   "1.0"
 !define APP_URL       "http://code.google.com/p/shutdownguard/"
 !define APP_UPDATEURL "http://shutdownguard.googlecode.com/svn/wiki/latest-stable.txt"
 
@@ -17,6 +17,7 @@
 !include "Sections.nsh"
 !include "LogicLib.nsh"
 !include "StrFunc.nsh"
+!include "x64.nsh"
 ${StrLoc}
 
 ; General
@@ -174,11 +175,10 @@ Section "$(L10N_UPDATE_SECTION)" sec_update
 	FileRead $0 $1
 	FileClose $0
 	Delete /REBOOTOK "$TEMP\${APP_NAME}-updatecheck"
-	${If} $1 > ${APP_VERSION}
+	StrCmp $1 ${APP_VERSION} done
 		MessageBox MB_ICONINFORMATION|MB_YESNO "$(L10N_UPDATE_DIALOG)" /SD IDNO IDNO done
 			ExecShell "open" "${APP_URL}"
 			Quit
-	${EndIf}
 	done:
 SectionEnd
 

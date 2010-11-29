@@ -1,9 +1,5 @@
 /*
-	ShutdownGuard - nl-NL localization by XXX (xxx@example.com)
-	Do not localize APP_NAME, it will be automatically replaced.
-	Keep this file in UTF–8
-	
-	Copyright (C) 2009  Stefan Sundin (recover89@gmail.com)
+	ShutdownGuard - nl-NL localization by Laurens van Dam (laurens94@gmail.com)
 	
 	This program is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -12,28 +8,32 @@
 */
 
 struct strings nl_NL = {
- /* menu_enable */       L"Aanzetten",
- /* menu_disable */      L"Uitzetten",
- /* menu_hide */         L"Taakbalk verbergen",
- /* menu_autostart */    L"Automatisch starten",
- /* menu_shutdown */     L"Afsluiten",
- /* menu_update */       L"Update beschikbaar!",
- /* menu_about */        L"Over",
- /* menu_exit */         L"Afsluiten",
- /* tray_enabled */      APP_NAME " (ingeschakeld)",
- /* tray_disabled */     APP_NAME " (niet ingeschakeld)",
- /* prevent */           L"Windows afsluiting voorkomen.",
- /* balloon */           L"Klik hier om verder te gaan met afsluiten.",
- /* shutdown_ask */      L"Wat wil je doen?",
- /* shutdown_logoff */   L"Afmelden",
+ /* menu_enable       */ L"Aanzetten",
+ /* menu_disable      */ L"Uitzetten",
+ /* menu_hide         */ L"Taakbalk verbergen",
+ /*+ menu_options      */ L"Options",
+ /* menu_autostart    */ L"Automatisch starten",
+ /*+ menu_settings     */ L"Open settings",
+ /*+ menu_chkupdate    */ L"Check for update",
+ /* menu_update       */ L"Update beschikbaar!",
+ /* menu_shutdown     */ L"Afsluiten",
+ /* menu_about        */ L"Over",
+ /* menu_exit         */ L"Afsluiten",
+ /* tray_enabled      */ APP_NAME " (ingeschakeld)",
+ /* tray_disabled     */ APP_NAME " (niet ingeschakeld)",
+ /* prevent           */ L"Windows afsluiting voorkomen.",
+ /* balloon           */ L"Klik hier om verder te gaan met afsluiten.",
+ /* shutdown_ask      */ L"Wat wil je doen?",
+ /* shutdown_logoff   */ L"Afmelden",
  /* shutdown_shutdown */ L"Afsluiten",
- /* shutdown_reboot */   L"Herstarten",
- /* shutdown_nothing */  L"Niets",
- /* shutdown_help */     L"Help",
- /* update_balloon */    L"Nieuwe versie gevonden!",
- /* update_dialog */     L"Een nieuwe versie is beschibaar.\nNaar de website gaan?\n\n(Je kan het automatisch op updates controleren uitzetten in "APP_NAME".ini)",
- /* about_title */       L"Over " APP_NAME,
- /* about */             APP_NAME " - " APP_VERSION "\n\
+ /* shutdown_reboot   */ L"Herstarten",
+ /* shutdown_nothing  */ L"Niets",
+ /* shutdown_help     */ L"Help",
+ /* update_balloon    */ L"Nieuwe versie gevonden!",
+ /* update_dialog     */ L"Een nieuwe versie is beschibaar.\nNaar de website gaan?\n\nJe kan het automatisch op updates controleren uitzetten in "APP_NAME".ini",
+ /*+ update_nonew      */ L"No update available.",
+ /* about_title       */ L"Over " APP_NAME,
+ /*! about             */ APP_NAME " - " APP_VERSION "\n\
 Gemaakt door Stefan Sundin\n\
 Vertaald door Laurens van Dam (laurens94@gmail.com)\n\
 \n\

@@ -19,7 +19,7 @@
 
 //App
 #define APP_NAME            L"ShutdownGuard"
-#define APP_VERSION         "0.5"
+#define APP_VERSION         "1.0"
 #define APP_URL             L"http://code.google.com/p/shutdownguard/"
 #define APP_UPDATE_STABLE   L"http://shutdownguard.googlecode.com/svn/wiki/latest-stable.txt"
 #define APP_UPDATE_UNSTABLE L"http://shutdownguard.googlecode.com/svn/wiki/latest-unstable.txt"
@@ -62,7 +62,7 @@ UINT WM_UPDATESETTINGS = 0;
 UINT WM_ADDTRAY = 0;
 UINT WM_HIDETRAY = 0;
 struct {
-	wchar_t *Prevent;
+	wchar_t *PreventMessage;
 	int Silent;
 	wchar_t *HelpUrl;
 } settings = {NULL,0,NULL};
@@ -131,12 +131,12 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 			break;
 		}
 	}
-	//Prevent
-	settings.Prevent = l10n->prevent;
-	GetPrivateProfileString(APP_NAME, L"Prevent", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
+	//PreventMessage
+	settings.PreventMessage = l10n->prevent;
+	GetPrivateProfileString(APP_NAME, L"PreventMessage", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
 	if (wcslen(txt) != 0) {
-		settings.Prevent = malloc((wcslen(txt)+1)*sizeof(wchar_t));
-		wcscpy(settings.Prevent, txt);
+		settings.PreventMessage = malloc((wcslen(txt)+1)*sizeof(wchar_t));
+		wcscpy(settings.PreventMessage, txt);
 	}
 	//Silent
 	GetPrivateProfileString(APP_NAME, L"Silent", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
@@ -303,15 +303,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				break;
 			}
 		}
-		//Prevent
-		if (settings.Prevent != l10n->prevent) {
-			free(settings.Prevent);
-			settings.Prevent = l10n->prevent;
+		//PreventMessage
+		if (settings.PreventMessage != l10n->prevent) {
+			free(settings.PreventMessage);
+			settings.PreventMessage = l10n->prevent;
 		}
-		GetPrivateProfileString(APP_NAME, L"Prevent", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
+		GetPrivateProfileString(APP_NAME, L"PreventMessage", L"", txt, sizeof(txt)/sizeof(wchar_t), path);
 		if (wcslen(txt) != 0) {
-			settings.Prevent = malloc((wcslen(txt)+1)*sizeof(wchar_t));
-			wcscpy(settings.Prevent, txt);
+			settings.PreventMessage = malloc((wcslen(txt)+1)*sizeof(wchar_t));
+			wcscpy(settings.PreventMessage, txt);
 		}
 		//Silent
 		GetPrivateProfileString(APP_NAME, L"Silent", L"0", txt, sizeof(txt)/sizeof(wchar_t), path);
@@ -442,13 +442,13 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 		if (enabled) {
 			//Prevent shutdown
 			if (vista) {
-				ShutdownBlockReasonCreate(hwnd, settings.Prevent);
+				ShutdownBlockReasonCreate(hwnd, settings.PreventMessage);
 				hide = 0;
 				UpdateTray();
 			}
 			else if (!settings.Silent || !hide || GetAsyncKeyState(VK_SHIFT)&0x800) {
 				//Show balloon, in vista it would just be automatically dismissed by the shutdown dialog
-				wcsncpy(tray.szInfo, settings.Prevent, (sizeof(tray.szInfo))/sizeof(wchar_t));
+				wcsncpy(tray.szInfo, settings.PreventMessage, (sizeof(tray.szInfo))/sizeof(wchar_t));
 				wcscat(tray.szInfo, L"\n");
 				wcscat(tray.szInfo, l10n->balloon);
 				tray.uFlags |= NIF_INFO;
