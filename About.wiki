@@ -1,20 +1,57 @@
 #summary Some info
 #labels Featured
 
+= Introduction =
+
 The idea for ShutdownGuard came from a program I made a long time ago in Delphi. This C-port is a much improved version of that. You can download the old Delphi program and its source code from the downloads section.
 
 Note that programs are still able to shutdown Windows if they explicitly force it.
 
-
-= Balloon tips =
+== Windows XP ==
 
 This will appear in Windows XP when a shutdown is blocked.
 
 http://shutdownguard.googlecode.com/svn/wiki/ShutdownGuard.png
 
+== Vista and Windows 7 ==
 
-= Vista and Windows 7 =
-
-With Vista, Microsoft broke all programs who previously prevented shutdowns, now programs have to specify a reason as to why they want to prevent a shutdown.
+This will appear in Vista and Windows 7.
 
 http://shutdownguard.googlecode.com/svn/wiki/vista.png
+
+
+= Configuration =
+
+There are a few features that you can configure in the configuration file called `ShutdownGuard.ini`. The simplest way to open it is through the tray menu.
+
+== PreventMessage ==
+
+This is simply a customized message that will appear when preventing a shutdown.
+
+== Silent ==
+
+If `Silent` is enabled and you have hidden the tray icon, ShutdownGuard won't notify you with the balloon tooltip when a shutdown is prevented.
+You must hold the shift button when attempting shutdown to make the balloon tooltip show again.
+Note that `Silent` does not work on Vista or Windows 7.
+
+== HelpUrl ==
+
+If `HelpUrl` is specified, a help button that will open the url will appear in the "_What do you want to do?_" dialog.
+The url must start with http:// or https://.
+
+== Language ==
+
+This settings lets you change the language of ShutdownGuard. You can currently choose between English, Spanish, Galician, Lithuanian, Nynorsk and Dutch.
+
+If you want to translate ShutdownGuard, feel free to email me, but please only do this if you want to commit to keeping your translation up to date in the future.
+
+== Update ==
+
+ShutdownGuard will by default check if there is a newer version available when it is started. It will only notify you if it finds a new version, it will not download anything for you. If you do not like this behavior, you can disable it here. You can check for update manually in the tray menu, regardless of this setting.
+
+Remember that you can monitor [http://shutdownguard.googlecode.com/svn/wiki/feed.xml the rss feed] for new releases.
+
+
+= About the author =
+
+ShutdownGuard was created and is maintained by Stefan Sundin. You can visit my website at [http://stefansundin.com/ stefansundin.com].
