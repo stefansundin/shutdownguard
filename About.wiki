@@ -37,7 +37,7 @@ Note that `Silent` does not work on Vista or Windows 7.
 == HelpUrl ==
 
 If `HelpUrl` is specified, a help button that will open the url will appear in the "_What do you want to do?_" dialog.
-The url must start with http:// or https://.
+The url must start with _http://_ or _https://_.
 
 == Language ==
 
