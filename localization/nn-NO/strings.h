@@ -1,45 +1,45 @@
 /*
 	ShutdownGuard - nn-NO lokalisering av Jon Stødle (jonstodle@gmail.com)
 	
-	This program is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+	Dette programmet er fri programvare: du kan redistribuere det og/eller
+	endre det under GNU General Public License-lisensen, publisert av
+	Free Software Foundation, anten versjon 3 av lisensen eller (om du vil)
+	ein seinare versjon.
 */
 
 struct strings nn_NO = {
  /* menu_enable       */ L"Slå på",
  /* menu_disable      */ L"Slå av",
- /* menu_hide         */ L"Gøym ikon",
- /*+ menu_options      */ L"Options",
+ /* menu_hide         */ L"Gøym",
+ /* menu_options      */ L"Val",
  /* menu_autostart    */ L"Autostart",
- /*+ menu_settings     */ L"Open settings",
- /*+ menu_chkupdate    */ L"Check for update",
+ /* menu_settings     */ L"Opne val",
+ /* menu_chkupdate    */ L"Sjå etter oppdatering",
  /* menu_update       */ L"Oppdatering tilgjengeleg",
- /* menu_shutdown     */ L"Skru av",
+ /* menu_shutdown     */ L"Slå av",
  /* menu_about        */ L"Om",
  /* menu_exit         */ L"Avslutt",
  /* tray_enabled      */ APP_NAME " (slådd på)",
  /* tray_disabled     */ APP_NAME " (slådd av)",
- /* prevent           */ L"Forhindra Windows i å skrue av.",
- /* balloon           */ L"Klikk her for å halde fram avskruinga.",
+ /* prevent           */ L"Forhindre Windows i å slå av.",
+ /* balloon           */ L"Klikk her for å halde fram avslåinga.",
  /* shutdown_ask      */ L"Kva vil du gjere?",
  /* shutdown_logoff   */ L"Logg av",
  /* shutdown_reboot   */ L"Start på nytt",
- /* shutdown_shutdown */ L"Skru av",
+ /* shutdown_shutdown */ L"Slå av",
  /* shutdown_nothing  */ L"Ingenting",
  /* shutdown_help     */ L"Hjelp",
  /* update_balloon    */ L"Fann ein ny versjon",
- /* update_dialog     */ L"Ein ny versjon er tilgjengeleg.\nGå til vevside?",
- /*+ update_nonew      */ L"No update available.",
+ /* update_dialog     */ L"Ein ny versjon er tilgjengeleg.\nGå til vevsida?",
+ /* update_nonew      */ L"Ingen oppdatering tilgjengeleg.",
  /* about_title       */ L"Om " APP_NAME,
- /*! about             */ APP_NAME " - " APP_VERSION "\n\
+ /* about             */ APP_NAME " - " APP_VERSION "\n\
 Laga av Stefan Sundin\n\
 Omset av Jon Stødle (jonstodle@gmail.com)\n\
 \n\
-Forhindre Windows i å skrue av, gjere omstart og logge av.\n\
+Forhindre Windows i å slå av, gjere omstart og logge av.\n\
 Når ShutdownGuard forhindrar noko, vil det kome ein sprettoppballong som spør om du vil halde fram.\n\
-Trykk på skrollehjulet for å få opp avsluttingsdialogen.\n\
+Trykk på musehjulet for å få opp avsluttingsdialogen.\n\
 \n\
 Vitj vevsida på "APP_URL"\n\
 Send tilbakemelding til recover89@gmail.com"

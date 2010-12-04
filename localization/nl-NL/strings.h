@@ -11,10 +11,10 @@ struct strings nl_NL = {
  /* menu_enable       */ L"Aanzetten",
  /* menu_disable      */ L"Uitzetten",
  /* menu_hide         */ L"Taakbalk verbergen",
- /*+ menu_options      */ L"Options",
+ /* menu_options      */ L"Opties",
  /* menu_autostart    */ L"Automatisch starten",
- /*+ menu_settings     */ L"Open settings",
- /*+ menu_chkupdate    */ L"Check for update",
+ /* menu_settings     */ L"Open instellingen",
+ /* menu_chkupdate    */ L"Controleer voor updates",
  /* menu_update       */ L"Update beschikbaar!",
  /* menu_shutdown     */ L"Afsluiten",
  /* menu_about        */ L"Over",
@@ -31,9 +31,9 @@ struct strings nl_NL = {
  /* shutdown_help     */ L"Help",
  /* update_balloon    */ L"Nieuwe versie gevonden!",
  /* update_dialog     */ L"Een nieuwe versie is beschibaar.\nNaar de website gaan?\n\nJe kan het automatisch op updates controleren uitzetten in "APP_NAME".ini",
- /*+ update_nonew      */ L"No update available.",
+ /* update_nonew      */ L"Geen update beschikbaar.",
  /* about_title       */ L"Over " APP_NAME,
- /*! about             */ APP_NAME " - " APP_VERSION "\n\
+ /* about             */ APP_NAME " - " APP_VERSION "\n\
 Gemaakt door Stefan Sundin\n\
 Vertaald door Laurens van Dam (laurens94@gmail.com)\n\
 \n\
@@ -42,5 +42,5 @@ Wanneer ShutdownGuard iets voorkomt, zal het in de taakbalk verschijnen en vraag
 Klik met de middelste toets op het icoon in de taakbalk om het afsluitvenster te openen.\n\
 \n\
 Bezoek de website op "APP_URL"\n\
-Verstuur feedback naar recover89@gmail.com"
+Bezoek de website van de auteur op http://stefansundin.com/"
 };

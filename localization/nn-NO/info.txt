@@ -18,9 +18,9 @@ ShutdownGuard har open kjeldekode og GPL-lisensiert.
 Endringslogg
 ---------
 1.0:
-Added 64-bit executable. The installer will automatically install the correct executable.
-Removed PatchApps. It has now been separated to a separate program. Read the wiki for more information.
-Fixed some minor bugs.
+La til 64-bits kjørefil. Installatøren installerer den rikitige fila automatisk.
+Fjerna PatchApps. Det har no vorte separert til eit eige program. Les wikien for meir informasjon.
+Fiksa nokre mindre feil.
 
 0.4 - 2009-09-05:
 La til høve til å lappe program (sjå ShutdownGuard.ini).

@@ -8,8 +8,7 @@ Klik met de middelste toets op het icoon in de taakbalk om het afsluitvenster te
 ShutdownGuard controleert automatisch op updates. Je kunt dit uitschakelen in ShutdownGuard.ini.
 
 Bezoek de website op http://code.google.com/p/shutdownguard/
--Verstuur feedback naar recover89@gmail.com
-+Visit the author's website at http://stefansundin.com/
+Bezoek de website van de auteur op http://stefansundin.com/
 
 Als het programma je goed helpt en je maakt er vaak gebruik van, overweeg dan alstublieft een geldbedrag te doneren.
 De uitleg over hoe je kan doneren staat op de website.
@@ -18,9 +17,9 @@ ShutdownGuard is open source, gelicenseerd onder GPL.
 Changelog
 ---------
 1.0:
-Added 64-bit executable. The installer will automatically install the correct executable.
-Removed PatchApps. It has now been separated to a separate program. Read the wiki for more information.
-Fixed some minor bugs.
+64-bit executable toegevoegd. Het installatieprogramma zal automatisch de goede executable kiezen.
+PatchApps verwijderd. Het is nu een apart programma. Lees de wiki voor meer informatie.
+Enkele bugs opgelost.
 
 0.4 - 2009-09-05:
 De mogelijkheid toegevoegd om programma's te patchen (zie ShutdownGuard.ini).
@@ -35,7 +34,7 @@ Probleem opgelost met het icoon in de taakbalk die niet opnieuw wordt toegevoegd
 Update controleren toegevoegd.
 
 0.2 - 2008-11-14:
-Compatibel met vista.
+Compatibel met Vista.
 Afsluit-dialoog knoppen herorganiseerd.
 Klikken met de middelste toets op het icoon in de taakbalk opent het afsluitvenster.
 
