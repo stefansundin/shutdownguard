@@ -3,9 +3,12 @@ Programado por Stefan Sundin
 Traducido por Fabrizio Ferri
 
 Evita los apagados y reinicios indeseados de Windows.
-Cuando ShutdownGuard bloquea un intento de apagado aparece un aviso en la barra de tareas preguntando si quieres continuar.
-El clic central en el icono del área de notificación invocará el cuadro de opciones de apagado
+Cuando ShutdownGuard bloquea un intento de apagado aparece un aviso en la bandeja del sistema preguntando si quieres continuar.
+Un clic central en el icono del área de notificación invocará el cuadro de opciones de apagado
 ShutdownGuard buscará las actualizaciones automáticamente. Puedes desactivarlas editando el fichero ShutdownGuard.ini.
+
+Ten en cuenta que ShutdownGuard no será capaz de prevenir todos los apagados, algunos programas piden explícitamente a Windows un apagado forzado.
+Lo que significa que algunos programas seguirán pudiendo apagar el equipo!
 
 Visita la página web en http://code.google.com/p/shutdownguard/
 Visita la página web del autor en http://stefansundin.com/
@@ -16,6 +19,11 @@ ShutdownGuard es un programa de código abierto bajo licencia GPL.
 
 Historial de cambios
 --------------------
+1.0:
+Se añadió un ejecutable de 64-bits, el programa de instalación seleccionará el correcto.
+Se eliminó PatchApps. Ahora se ha separado a un programa aparte, lee el wiki para más información.
+Se corrigieron errores menores.
+
 0.4 - 2009-09-05:
 Añadida la posibilidad de parchear aplicaciones (ver ShutdownGuard.ini).
 Añadido botón de reinicio al cuadro de diálogo de apagado.

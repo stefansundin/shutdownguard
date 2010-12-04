@@ -39,7 +39,9 @@ Traducido por Fabrizio Ferri (algernon@gmail.com)\n\
 \n\
 Evita los apagados y reinicios indeseados de Windows.\n\
 Cuando ShutdownGuard bloquea un intento de apagado aparece un aviso en la barra de tareas preguntando si quieres continuar.\n\
-El clic central en el icono del área de notificación invocará el cuadro de opciones de apagado\n\
+Un clic central en el icono del área de notificación invocará el cuadro de opciones de apagado\n\
+\n\
+Ten en cuenta que ShutdownGuard no podrá evitar todos los apagados, algunos programas piden explícitamente un apagado forzado a Windows. ¡Algunos programas podrán seguir apagando el equipo!\n\
 \n\
 Visita la página web en "APP_URL"\n\
 Visita la página web del autor en http://stefansundin.com/"

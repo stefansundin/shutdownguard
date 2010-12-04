@@ -13,10 +13,10 @@ struct strings gl_ES = {
  /* menu_hide         */ L"Esconder a icona",
  /* menu_options      */ L"Preferencias",
  /* menu_autostart    */ L"Arrancar ó inicio",
- /* menu_settings     */ L"Abrir configuración",
+ /* menu_settings     */ L"Abrir a configuración",
  /* menu_chkupdate    */ L"Comprobar actualizacións",
  /* menu_update       */ L"Actualización dispoñibel",
- /* menu_shutdown     */ L"Apagado",
+ /* menu_shutdown     */ L"Menú de apagado",
  /* menu_about        */ L"Acerca de",
  /* menu_exit         */ L"Saír",
  /* tray_enabled      */ APP_NAME " (activado)",
@@ -40,6 +40,8 @@ Traducido por Alexander De Sousa\n\
 Evita que Windows se apague, reinicie ou peche a sesión.\n\
 Cando ShutdownGuard evite algo aparecerá unha notificación na bandexa do sistema preguntándoche se queres continuar.\n\
 Para mostrar o dialogo de apagado fai clic co botón do medio do rato na icona.\n\
+\n\
+Ten en conta que ShutdownGuard non será capaz de evitar todos os apagados, algúns programas piden explícitamente un apagado á forza. O que significa que algúns programas seguirán sendo capaces de apagar o equipo!\n\
 \n\
 Visita a páxina web en "APP_URL"\n\
 Visita a web do autor en http://stefansundin.com/"

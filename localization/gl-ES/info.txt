@@ -5,8 +5,10 @@ Traducido por Alexander De Sousa
 Evita que Windows se apague, reinicie ou peche a sesión.
 Cando ShutdownGuard evite algo aparecerá unha notificación na bandexa do sistema preguntándoche se queres continuar.
 Para mostrar o dialogo de apagado fai clic co botón do medio do rato na icona.
-ShutdownGuard ha comprobar automaticamente se hai actualizacións.
-Pódelo desactivar editando ShutdownGuard.ini, poñendo CheckOnStartup=0 no apartado [Update].
+ShutdownGuard ha comprobar automaticamente se hai actualizacións. Pódelo desactivar en ShutdownGuard.ini.
+
+Ten en conta que ShutdownGuard non será capaz de evitar todos os apagados, algúns programas piden explícitamente un apagado á forza.
+O que significa que algúns programas seguirán sendo capaces de apagar o equipo!
 
 Visita a páxina web en http://code.google.com/p/shutdownguard/
 Visita a páxina web do autor en http://stefansundin.com/
@@ -17,11 +19,17 @@ ShutdownGuard é un programa de código fonte aberto, baixo a licencia GPL.
 
 Listaxe de Cambios:
 -------------------
+1.0:
+Engadiuse un executable de 64-bits. O instalador escollerá a versión correcta automáticamente.
+Eliminouse PatchApps. Agora existe como un programa aparte, le o wiki para máis información.
+Corrixíronse erros menores.
+
 0.4 - 2009-09-05:
-Engadiuse o botón de reinicio.
-Engadida a opción Silent.
-Engadida a opción HelpUrl.
-Agora pódese editar a lingua en ShutdownGuard.ini seleccionando adecuadamente Language=lingua.
+Engadiuse a posibilidade de parchar aplicacións (ve ShutdownGuard.ini).
+Engadiuse o botón de reinicio no menú de apagado.
+Engadiuse a opción Silent.
+Engadiuse a opción HelpUrl.
+Agora pódese editar a lingua en ShutdownGuard.ini.
 
 0.3 - 2008-12-25:
 Arranxado un problema que impedía algunhas veces que se mostrase a notificación.
