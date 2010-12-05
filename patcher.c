@@ -78,14 +78,6 @@ HMODULE WINAPI (*pfnFreeLibrary)(LPCTSTR) = NULL;
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, int iCmdShow) {
 	g_hinst = hInst;
 	
-	//Look for previous instance
-	WM_UPDATESETTINGS = RegisterWindowMessage(L"UpdateSettings");
-	HWND previnst = FindWindow(APP_NAME, NULL);
-	if (previnst != NULL) {
-		PostMessage(previnst, WM_UPDATESETTINGS, 0, 0);
-		return 0;
-	}
-	
 	//Load settings
 	wchar_t path[MAX_PATH];
 	GetModuleFileName(NULL, path, sizeof(path)/sizeof(wchar_t));
