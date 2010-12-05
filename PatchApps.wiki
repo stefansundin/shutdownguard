@@ -1,39 +1,6 @@
 #summary Read about PatchApps
+#labels Deprecated
 
-= Introduction =
+= Deprecated =
 
-!PatchApps is a new feature in 0.4. It makes ShutdownGuard patch other processes (overwrite their memory), so that when they attempt to call ExitWindowsEx(), the call is intercepted and stopped.
-
-!PatchApps will patch the processes listed in PatchList. The matching is case-insensitive. If PatchList is empty, then all processes will be patched.
-
-Read more about patching on the wiki page: [Patching].
-
-= Stability =
-
-Writing in the memory of other processes is always dangerous, so note that there are a slim chance of crashing the other process. And if you attempt to patch a system process, you may crash the entire system and get a bluescreen.
-
-This is also the first time I have programmed something like this, so use it at your own risk.
-
-I aimed to first and foremost get a working version released, and I now plan to incrementally improving it for future versions.
-
-Also note that because patching other processes is often used by viruses and programs like that, antivirus programs might mistake ShutdownGuard for a virus. This is a false positive, of course, and is caused by the antivirus heuristics.
-
-= Proofness =
-
-*!PatchApps is not bullet-proof!* If a program *really* wants to work around this, it can do so very easily. ShutdownGuard only patches the executable, not the modules (DLLs) it has loaded.
-
-Also note that currently ShutdownGuard can only patch 32-bit processes. I am working on patching 64-bit processes.
-
-Note that many error messages from !PatchApps will only be shown when running in debug mode (you can do that by compiling from source yourself). Therefore a patching might fail even if you don't see any error message.
-
-Since there are no API that can tell ShutdownGuard when new processes appear, ShutdownGuard will check every 5 seconds if there are any new processes that needs to be patched. A process can thus spawn and issue a forced shutdown before ShutdownGuard notices it.
-
-= What happens when a shutdown is blocked? =
-
-When the ExitWindowsEx() call is intercepted, the process sends a message to ShutdownGuard.exe that the call has been blocked. ShutdownGuard then displays the usual balloon tip. The balloon tip always says that the *shutdown* has been blocked, even if the program tried to reboot or log off (this will change in a future version).
-
-At the moment, processes that are not running in the same session as ShutdownGuard.exe (e.g. services), will not be able to notify ShutdownGuard that a shutdown has been blocked. The shutdown will still be blocked, however.
-
-I expect to improve PatchApps in upcoming versions.
-
-Tip: You can check which processes are patched by using [http://technet.microsoft.com/en-us/sysinternals/bb896653.aspx Process Explorer]. Use the search dialog and search for "patch.dll".
+`PatchApps` has been removed from ShutdownGuard as of version 1.0. See [ShutdownPatcher].
