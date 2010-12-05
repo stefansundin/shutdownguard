@@ -8,8 +8,7 @@ Trykk på skrollehjulet for å få opp avsluttingsdialogen
 ShutdownGuard vil sjekke for oppdateringar automatisk. Du kan skrue av dette i ShutdownGuard.ini.
 
 Vitj vevsida på http://code.google.com/p/shutdownguard/
--Send tilbakemelding til recover89@gmail.com
-+Visit the author's website at http://stefansundin.com/
+Visit the author's website at http://stefansundin.com/
 
 Om du tykkjer at programmet er hendig, vurder å gje ein donasjon.
 Du kan finne ut korleis du donerer på vevsida.
@@ -17,7 +16,7 @@ ShutdownGuard har open kjeldekode og GPL-lisensiert.
 
 Endringslogg
 ---------
-1.0:
+1.0 - 2010-12-05:
 La til 64-bits kjørefil. Installatøren installerer den rikitige fila automatisk.
 Fjerna PatchApps. Det har no vorte separert til eit eige program. Les wikien for meir informasjon.
 Fiksa nokre mindre feil.

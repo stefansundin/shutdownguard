@@ -18,7 +18,7 @@ ShutdownGuard is open source, licensed under GPL.
 
 Changelog
 ---------
-1.0:
+1.0 - 2010-12-05:
 Added 64-bit executable. The installer will automatically install the correct executable.
 Removed PatchApps. It has now been separated to a separate program. Read the wiki for more information.
 Fixed some minor bugs.

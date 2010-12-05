@@ -42,5 +42,5 @@ Når ShutdownGuard forhindrar noko, vil det kome ein sprettoppballong som spør 
 Trykk på musehjulet for å få opp avsluttingsdialogen.\n\
 \n\
 Vitj vevsida på "APP_URL"\n\
-Send tilbakemelding til recover89@gmail.com"
+Visit the author's website at http://stefansundin.com/"
 };

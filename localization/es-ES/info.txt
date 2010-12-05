@@ -19,7 +19,7 @@ ShutdownGuard es un programa de código abierto bajo licencia GPL.
 
 Historial de cambios
 --------------------
-1.0:
+1.0 - 2010-12-05:
 Se añadió un ejecutable de 64-bits, el programa de instalación seleccionará el correcto.
 Se eliminó PatchApps. Ahora se ha separado a un programa aparte, lee el wiki para más información.
 Se corrigieron errores menores.
