@@ -18,7 +18,7 @@
 		<updated>2010-12-05T17:20:00Z</updated>
 		<author><name>Stefan Sundin</name></author>
 		<content type="html">
-&lt;p>Released 1.0. In this version I have removed &lt;tt>PatchApps&lt;/tt>. It has now been separated to a new program. The release also fixes a couple of minor bugs and also available in 64-bit. The installer will automatically install the correct executable. I decided to bump the version number to 1.0 since I consider ShutdownGuard feature complete. For more details, see the changelog below.&lt;/p>
+&lt;p>Released 1.0. In this version I have removed &lt;tt>PatchApps&lt;/tt>. It has now been separated to a new program. The release also fixes a couple of minor bugs and is also available in 64-bit. The installer will automatically install the correct executable. I decided to bump the version number to 1.0 since I consider ShutdownGuard feature complete. For more details, see the changelog below.&lt;/p>
 &lt;p>&lt;u>Changelog:&lt;/u>&lt;/p>
 &lt;ul>
 &lt;li>Added 64-bit executable. The installer will automatically install the correct executable.&lt;/li>
