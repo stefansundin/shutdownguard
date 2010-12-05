@@ -1,5 +1,6 @@
 #summary Read about the experimental program ShutdownPatcher
 
+
 = Introduction =
 
 !ShutdownPatcher is a separate program from ShutdownGuard. It is an attempt to solve the types of shutdowns that ShutdownGuard can't stop. It does this by patching other processes (overwriting parts of their memory), so that when they attempt to call `ExitWindowsEx()`, the call is intercepted and stopped.
@@ -7,6 +8,7 @@
 Note that I consider this patcher to be *experimental*. I have developed it for research purposes and I do not consider it to be very stable. *Use at your own risk!*
 
 Read more about patching on this wiki page: [Patching].
+
 
 = Stability =
 
@@ -16,6 +18,12 @@ This is also the first time I have programmed something like this, so use it at 
 
 Also note that because patching other processes is a technique often used by viruses, so there is a big chance that antivirus scanners will mistake !ShutdownPatcher for a virus. This is a false positive, of course, and is caused by antivirus heuristics.
 
+
+= 32-bit and 64-bit =
+
+There is a 32-bit version that is able to patch 32-bit processes only. There is also a 64-bit version that is intended to patch both 32-bit and 64-bit processes. For reasons unknown to me it is only able to patch 64-bit processes. Therefore you might need to run both versions simultaneously.
+
+
 = Proofness =
 
 *!ShutdownPatcher is not bullet-proof!* If a program *really* wants to work around this, it can do so very easily. !ShutdownPatcher only patches the executable, not the modules (DLLs) it has loaded.
@@ -23,6 +31,7 @@ Also note that because patching other processes is a technique often used by vir
 Note that many error messages from !ShutdownPatcher will only be shown when running in debug mode (you can do that by compiling from source yourself). Therefore patching program might fail even if you don't see any error message.
 
 Since there are no API that can tell !ShutdownPatcher when new processes appear, !ShutdownPatcher will check every 5 seconds if there are any new processes that needs to be patched. A process can thus spawn and issue a forced shutdown before !ShutdownPatcher notices it.
+
 
 = What happens when a shutdown is blocked? =
 
@@ -32,6 +41,12 @@ At the moment, processes that are not running in the same session as `ShutdownPa
 
 Tip: You can check which processes are patched by using [http://technet.microsoft.com/en-us/sysinternals/bb896653.aspx Process Explorer]. Use the search dialog and search for `patch.dll` and `patch_x64.dll`.
 
-= PatchApps =
+
+= Download =
+
+To download !ShutdownPatcher, go to the download section.
+
+
+= !PatchApps =
 
 This feature was previously included with ShutdownGuard and was called `PatchApps`. I decided to separate it to a program of its own since it is quite experimental.
