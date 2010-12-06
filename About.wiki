@@ -41,7 +41,7 @@ The url must start with _http://_ or _https://_.
 
 == Language ==
 
-This settings lets you change the language of ShutdownGuard. You can currently choose between English, Spanish, Galician, Lithuanian, Nynorsk and Dutch.
+This settings lets you change the language of ShutdownGuard. You can currently choose between English, Spanish, Galician, Nynorsk and Dutch.
 
 If you want to translate ShutdownGuard, feel free to email me, but please only do this if you want to commit to keeping your translation up to date in the future.
 
