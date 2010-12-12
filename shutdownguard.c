@@ -65,7 +65,7 @@ struct {
 	wchar_t *PreventMessage;
 	int Silent;
 	wchar_t *HelpUrl;
-} settings = {NULL,0,NULL};
+} settings = {NULL, 0, NULL};
 
 //Cool stuff
 int enabled = 1;
@@ -100,19 +100,9 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR szCmdLine, in
 	}
 	
 	//Create window
-	WNDCLASSEX wnd;
-	wnd.cbSize = sizeof(WNDCLASSEX);
-	wnd.style = 0;
-	wnd.lpfnWndProc = WindowProc;
-	wnd.cbClsExtra = 0;
-	wnd.cbWndExtra = 0;
-	wnd.hInstance = hInst;
-	wnd.hIcon = NULL;
-	wnd.hIconSm = NULL;
+	WNDCLASSEX wnd = {sizeof(WNDCLASSEX), 0, WindowProc, 0, 0, hInst, NULL, NULL, NULL, NULL, APP_NAME, NULL};
 	wnd.hCursor = LoadImage(NULL, IDC_ARROW, IMAGE_CURSOR, 0, 0, LR_DEFAULTCOLOR|LR_SHARED);
 	wnd.hbrBackground = (HBRUSH)(COLOR_BTNFACE+1);
-	wnd.lpszMenuName = NULL;
-	wnd.lpszClassName = APP_NAME;
 	RegisterClassEx(&wnd);
 	g_hwnd = CreateWindowEx(WS_EX_TOPMOST, wnd.lpszClassName, APP_NAME, WS_OVERLAPPEDWINDOW^WS_SIZEBOX^WS_MAXIMIZEBOX^WS_MINIMIZEBOX, CW_USEDEFAULT, CW_USEDEFAULT, 360, 126, NULL, NULL, hInst, NULL);
 	
