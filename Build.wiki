@@ -49,6 +49,6 @@ To build ShutdownPatcher, simply repeat the instructions above, but in the `patc
 
 If you don't get it working, it might help to watch [http://www.youtube.com/watch?v=4ENwQxSr_So this video]. In it I explain how to compile another program of mine, SuperF4. These instructions should work just as well with ShutdownGuard.
 
-<wiki:gadget border="0" url="http://stefansundin.com/stuff/youtube-iframe.xml" up_id="4ENwQxSr_So" width="640" height="385" />
+<wiki:gadget border="0" url="http://stefansundin.com/stuff/youtube-iframe.xml" up_id="4ENwQxSr_So" up_args="rel=0" width="640" height="385" />
 
 Add a comment if you need help.
