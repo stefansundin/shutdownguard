@@ -3,9 +3,9 @@
 
 = Introduction =
 
-I can't remember when I got the idea for ShutdownGuard. It was many years ago when I was learning to program in Delphi. Anyway, I never really released that version.
+I can't remember how I got the idea for ShutdownGuard. It was many years ago when I was learning to code in Delphi. Anyway, I never really released that version back then.
 
-Now that I know C, I was looking through some of my old programs that I could recode in C. I picked ShutdownGuard. The result is this C-port which is a much improved version of my old Delphi version. You can still download the old Delphi program and its source code from the download section.
+Now that I know C, I was looking through some of my old programs, searching for one that I could recode in C. I picked ShutdownGuard. The result is this port which is a much improved version of my old Delphi version. You can still download the old Delphi program and its source code from the download section.
 
 Note that programs are still able to shutdown Windows if they explicitly force it. ShutdownGuard can *not* prevent all shutdowns.
 
@@ -19,7 +19,7 @@ http://shutdownguard.googlecode.com/svn/wiki/ShutdownGuard.png
 
 This will appear in Vista and Windows 7.
 
-http://shutdownguard.googlecode.com/svn/wiki/vista.png
+http://shutdownguard.googlecode.com/svn/wiki/win7.png
 
 
 = Configuration =
