@@ -1,4 +1,4 @@
-#summary Some info
+#summary A more in-depth introduction
 #labels Featured
 
 = Introduction =
@@ -52,7 +52,6 @@ If you want to translate ShutdownGuard, feel free to email me, but please only d
 ShutdownGuard will by default check if there is a newer version available when it is started. It will only notify you if it finds a new version, it will not download anything for you. If you do not like this behavior, you can disable it here. You can check for update manually in the tray menu, regardless of this setting.
 
 Remember that you can monitor [http://shutdownguard.googlecode.com/svn/wiki/feed.xml the rss feed] for new releases.
-#summary A more in-depth introduction
 
 
 = UAC =
