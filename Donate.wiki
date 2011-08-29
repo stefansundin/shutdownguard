@@ -8,7 +8,7 @@ Donations are a great motivation for me to keep updating my programs. They are a
 You can get in touch with me by sending an email to `stefan[at]stefansundin[.]com`. You can also [http://stefansundin.com/ visit my website] to read a little more about me.
 
 
-= Who have contributed =
+== Who else have contributed ==
 
 While I have done most of the work, here are some people who have contributed.
   * Fabrizio Ferri: Spanish translation
