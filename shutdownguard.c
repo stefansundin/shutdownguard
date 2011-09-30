@@ -436,9 +436,9 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 				hide = 0;
 				UpdateTray();
 			}
-			else if (!settings.Silent || !hide || GetAsyncKeyState(VK_SHIFT)&0x800) {
+			else if (!settings.Silent || !hide || GetAsyncKeyState(VK_SHIFT)&0x8000) {
 				//Show balloon, in vista it would just be automatically dismissed by the shutdown dialog
-				wcsncpy(tray.szInfo, settings.PreventMessage, (sizeof(tray.szInfo))/sizeof(wchar_t));
+				wcsncpy(tray.szInfo, settings.PreventMessage, sizeof(tray.szInfo)/sizeof(wchar_t));
 				wcscat(tray.szInfo, L"\n");
 				wcscat(tray.szInfo, l10n->balloon);
 				tray.uFlags |= NIF_INFO;
