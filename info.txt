@@ -1,0 +1,8 @@
+
+Autostart switches (non-case-sensitive):
+    -s, --state id
+    id:
+      Ask
+      Prevent
+      Idle
+
